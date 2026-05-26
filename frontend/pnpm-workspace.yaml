@@ -1,0 +1,5 @@
+# pnpm 11+ settings (moved out of package.json)
+# https://pnpm.io/settings
+allowBuilds:
+  '@swc/core': true
+  esbuild: true
