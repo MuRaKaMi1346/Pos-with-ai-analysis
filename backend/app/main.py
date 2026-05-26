@@ -6,10 +6,16 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi.errors import RateLimitExceeded
+from sqlmodel import Session
 
 from app.api.v1.router import api_router
 from app.core.config import get_settings
 from app.core.exceptions import register_exception_handlers
+from app.core.middleware import SecurityHeadersMiddleware
+from app.core.rate_limit import limiter, rate_limit_exceeded_handler
+from app.db.init_db import init_db
+from app.db.session import engine
 from app.utils.logging import setup_logging
 
 logger = logging.getLogger(__name__)
@@ -25,6 +31,9 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         settings.app_version,
         settings.app_env,
     )
+    if settings.app_env != "test":
+        with Session(engine) as session:
+            init_db(session, settings)
     yield
     logger.info("Shutting down")
 
@@ -37,6 +46,8 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    # Middleware order: first added is innermost.
+    # CORS (innermost) handles preflight; SecurityHeaders (outermost) wraps everything.
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins_list,
@@ -44,13 +55,18 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    app.add_middleware(SecurityHeadersMiddleware)
+
+    # slowapi state + 429 handler
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)  # type: ignore[arg-type]
 
     register_exception_handlers(app)
     app.include_router(api_router)
 
     @app.get("/health", tags=["meta"])
     def health() -> dict[str, str]:
-        """Liveness probe. Returns service name / version + status."""
+        """Liveness probe."""
         return {
             "status": "ok",
             "name": settings.app_name,

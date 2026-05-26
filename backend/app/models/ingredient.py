@@ -6,7 +6,7 @@ different unit (with conversion handled in the service layer).
 
 from datetime import datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -39,6 +39,6 @@ class Ingredient(SQLModel, table=True):
     created_at: datetime = Field(default_factory=now_utc, nullable=False)
     updated_at: datetime = Field(default_factory=now_utc, nullable=False)
 
-    stock_level: "StockLevel | None" = Relationship(back_populates="ingredient")
+    stock_level: Optional["StockLevel"] = Relationship(back_populates="ingredient")
     movements: list["StockMovement"] = Relationship(back_populates="ingredient")
     recipes: list["Recipe"] = Relationship(back_populates="ingredient")

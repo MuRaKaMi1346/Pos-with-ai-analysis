@@ -1,15 +1,34 @@
-"""Seed initial data.
+"""Seed initial DB rows. Currently: bootstrap admin user.
 
-Step 1 stub — actual admin / default category seed is wired in Step 2 once auth
-is in place (we need ``hash_password`` working end-to-end before storing an
-admin row).
+Idempotent — safe to call on every startup. Skipped in tests via
+``settings.app_env == "test"`` guard in ``main.lifespan``.
 """
 
-from sqlmodel import Session
+import logging
+
+from sqlmodel import Session, select
 
 from app.core.config import Settings
+from app.core.security import hash_password
+from app.models import Role, User
+
+logger = logging.getLogger(__name__)
 
 
 def init_db(session: Session, settings: Settings) -> None:
-    """Create the bootstrap admin user + default categories. No-op in Step 1."""
-    _ = (session, settings)  # unused until Step 2
+    """Create the bootstrap admin user if missing."""
+    existing = session.exec(
+        select(User).where(User.username == settings.seed_admin_username)
+    ).first()
+    if existing is not None:
+        return
+
+    admin = User(
+        username=settings.seed_admin_username,
+        password_hash=hash_password(settings.seed_admin_password),
+        role=Role.ADMIN,
+        is_active=True,
+    )
+    session.add(admin)
+    session.commit()
+    logger.info("Seeded admin user %r", settings.seed_admin_username)
