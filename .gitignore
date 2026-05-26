@@ -83,3 +83,6 @@ lerna-debug.log*
 *.bak
 *.tmp
 *~
+
+#---------- claude ----------
+**/CLAUDE.md
