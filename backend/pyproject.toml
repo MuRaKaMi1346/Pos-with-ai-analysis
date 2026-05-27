@@ -25,6 +25,13 @@ dependencies = [
     "httpx>=0.27",
     # tz database (required on Windows; zoneinfo has no system fallback there)
     "tzdata>=2024.2 ; sys_platform == 'win32'",
+    # AI / forecasting (Step 6). Prophet intentionally skipped — install pain
+    # on Windows + LightGBM is sufficient to clear the baseline.
+    "lightgbm>=4.5",
+    "scikit-learn>=1.5",
+    "pandas>=2.2",
+    "numpy>=2.0",
+    "joblib>=1.4",
 ]
 
 [dependency-groups]
@@ -84,7 +91,15 @@ plugins = ["pydantic.mypy"]
 exclude = ["alembic/versions/", "models_store/"]
 
 [[tool.mypy.overrides]]
-module = ["slowapi.*", "argon2.*", "mlxtend.*", "prophet.*", "lightgbm.*"]
+module = [
+    "slowapi.*",
+    "argon2.*",
+    "mlxtend.*",
+    "prophet.*",
+    "lightgbm.*",
+    "pandas.*",
+    "joblib.*",
+]
 ignore_missing_imports = true
 
 [tool.pydantic-mypy]

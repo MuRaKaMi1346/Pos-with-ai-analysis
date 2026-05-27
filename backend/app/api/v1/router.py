@@ -3,6 +3,7 @@
 from fastapi import APIRouter
 
 from app.api.v1 import (
+    ai,
     auth,
     dashboard,
     ingredients,
@@ -20,3 +21,4 @@ api_router.include_router(recipes.router)
 api_router.include_router(inventory.router)
 api_router.include_router(orders.router)
 api_router.include_router(dashboard.router)
+api_router.include_router(ai.router)
