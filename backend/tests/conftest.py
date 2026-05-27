@@ -14,6 +14,7 @@ os.environ.setdefault("RATE_LIMIT_LOGIN", "10000/minute")
 os.environ.setdefault("REFRESH_COOKIE_SECURE", "false")
 
 from collections.abc import Generator
+from decimal import Decimal
 
 import pytest
 from fastapi.testclient import TestClient
@@ -25,9 +26,22 @@ import app.db.base as _models_base  # populates SQLModel.metadata
 from app.core.security import hash_password
 from app.db.session import get_session
 from app.main import app
-from app.models import Role, User
+from app.models import (
+    Category,
+    Ingredient,
+    Modifier,
+    Product,
+    Recipe,
+    Role,
+    StockLevel,
+    Unit,
+    User,
+)
 
 _ = _models_base
+
+
+# ── Engine / Session / Client ────────────────────────────────────────
 
 
 @pytest.fixture(name="engine")
@@ -107,3 +121,92 @@ def admin_token_fixture(client: TestClient, admin_user: User) -> str:
 def staff_token_fixture(client: TestClient, staff_user: User) -> str:
     _ = staff_user
     return _login(client, "staff", "StaffPass123")
+
+
+# ── Domain fixtures (categories / ingredients / products / modifiers) ─
+
+
+@pytest.fixture(name="category_coffee")
+def category_coffee_fixture(session: Session) -> Category:
+    cat = Category(name="Coffee")
+    session.add(cat)
+    session.commit()
+    session.refresh(cat)
+    return cat
+
+
+@pytest.fixture(name="ingredient_beans")
+def ingredient_beans_fixture(session: Session) -> Ingredient:
+    """Coffee beans (gram). NOTE: fixture does NOT create StockLevel — use ``stocked_pantry``."""
+    ing = Ingredient(name="Coffee Beans", unit=Unit.GRAM)
+    session.add(ing)
+    session.commit()
+    session.refresh(ing)
+    return ing
+
+
+@pytest.fixture(name="ingredient_milk")
+def ingredient_milk_fixture(session: Session) -> Ingredient:
+    ing = Ingredient(name="Milk", unit=Unit.MILLILITER)
+    session.add(ing)
+    session.commit()
+    session.refresh(ing)
+    return ing
+
+
+@pytest.fixture(name="product_latte")
+def product_latte_fixture(
+    session: Session,
+    category_coffee: Category,
+    ingredient_beans: Ingredient,
+    ingredient_milk: Ingredient,
+) -> Product:
+    """Latte: 18g beans + 180ml milk per cup at 65 baht."""
+    product = Product(
+        name="Latte",
+        category_id=category_coffee.id,
+        price=Decimal("65.00"),
+        cost=Decimal("18.00"),
+    )
+    session.add(product)
+    session.flush()
+    session.add(
+        Recipe(
+            product_id=product.id,
+            ingredient_id=ingredient_beans.id,
+            qty=Decimal("18.0000"),
+            unit=Unit.GRAM,
+        )
+    )
+    session.add(
+        Recipe(
+            product_id=product.id,
+            ingredient_id=ingredient_milk.id,
+            qty=Decimal("180.0000"),
+            unit=Unit.MILLILITER,
+        )
+    )
+    session.commit()
+    session.refresh(product)
+    return product
+
+
+@pytest.fixture(name="modifier_extra_shot")
+def modifier_extra_shot_fixture(session: Session) -> Modifier:
+    modifier = Modifier(name="Extra shot", price_delta=Decimal("10.00"), group="extras")
+    session.add(modifier)
+    session.commit()
+    session.refresh(modifier)
+    return modifier
+
+
+@pytest.fixture(name="stocked_pantry")
+def stocked_pantry_fixture(
+    session: Session,
+    ingredient_beans: Ingredient,
+    ingredient_milk: Ingredient,
+) -> None:
+    """1 kg beans + 5 L milk on hand — enough for many lattes."""
+    session.add(StockLevel(ingredient_id=ingredient_beans.id, quantity=Decimal("1000")))
+    session.add(StockLevel(ingredient_id=ingredient_milk.id, quantity=Decimal("5000")))
+    session.commit()
