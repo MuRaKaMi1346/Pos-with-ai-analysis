@@ -1,6 +1,7 @@
 import { Navigate, createBrowserRouter } from 'react-router-dom'
 
 import { AppShell } from '@/components/layout/AppShell'
+import { AiInsightsPage } from '@/features/ai-insights/AiInsightsPage'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { AdminRoute } from '@/features/auth/components/AdminRoute'
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute'
@@ -19,7 +20,10 @@ export const router = createBrowserRouter([
           { path: 'pos', element: <PosPage /> },
           {
             element: <AdminRoute />,
-            children: [{ path: 'dashboard', element: <DashboardPage /> }],
+            children: [
+              { path: 'dashboard', element: <DashboardPage /> },
+              { path: 'ai-insights', element: <AiInsightsPage /> },
+            ],
           },
         ],
       },

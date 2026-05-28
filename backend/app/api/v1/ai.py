@@ -4,7 +4,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
 
-from app.core.dependencies import DBSessionDep, require_role
+from app.core.dependencies import DBSessionDep, SettingsDep, require_role
 from app.models import Role
 from app.schemas.ai import (
     ForecastPoint,
@@ -13,7 +13,8 @@ from app.schemas.ai import (
     PurchaseSuggestionRow,
     TrainResponse,
 )
-from app.services import forecast_service
+from app.schemas.strategy import StrategyResponse
+from app.services import forecast_service, strategy_service
 
 router = APIRouter(prefix="/ai", tags=["ai"])
 
@@ -59,3 +60,17 @@ def train(session: DBSessionDep) -> TrainResponse:
     """Train one LightGBM model per active product (skips those with < 30 days of history)."""
     result = forecast_service.train_all(session)
     return TrainResponse(**result)
+
+
+@router.get(
+    "/strategy/daily",
+    response_model=StrategyResponse,
+    dependencies=[Depends(require_role(Role.ADMIN))],
+)
+def strategy_daily(
+    session: DBSessionDep,
+    settings: SettingsDep,
+    days: Annotated[int, Query(ge=7, le=180)] = 30,
+) -> StrategyResponse:
+    """Bundle / star / slow-mover insights + optional Thai summary from Ollama."""
+    return strategy_service.generate_daily_strategy(session, settings, days=days)

@@ -32,6 +32,8 @@ dependencies = [
     "pandas>=2.2",
     "numpy>=2.0",
     "joblib>=1.4",
+    # Step 7: market basket analysis
+    "mlxtend>=0.23",
 ]
 
 [dependency-groups]
@@ -118,6 +120,10 @@ asyncio_mode = "auto"
 filterwarnings = [
     "error",
     "ignore::DeprecationWarning:passlib.*",
+    # mlxtend's certainty metric divides by zero when all transactions are identical
+    # (small / synthetic test data). Benign — the result is filtered downstream.
+    "ignore::RuntimeWarning:mlxtend.*",
+    "ignore:invalid value encountered in divide:RuntimeWarning",
 ]
 
 # ─────────────────────────────────────────────────────────────────────
