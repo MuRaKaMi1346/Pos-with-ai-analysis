@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, status
 
-from app.core.dependencies import CurrentUserDep, DBSessionDep
+from app.core.dependencies import CurrentUserDep, DBSessionDep, SettingsDep
 from app.models import Order
 from app.schemas.order import OrderCreate, OrderRead
 from app.services import order_service
@@ -14,6 +14,7 @@ router = APIRouter(prefix="/orders", tags=["orders"])
 def create_order(
     data: OrderCreate,
     session: DBSessionDep,
+    settings: SettingsDep,
     current: CurrentUserDep,
 ) -> Order:
     """Create a new sale. Stock is deducted per BOM in one transaction."""
@@ -21,8 +22,8 @@ def create_order(
     return order_service.create_order(
         session,
         user_id=current.id,
-        items_in=data.items,
-        note=data.note,
+        payload=data,
+        settings=settings,
     )
 
 

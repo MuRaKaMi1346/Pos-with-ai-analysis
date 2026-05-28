@@ -1,4 +1,4 @@
-"""Order, OrderItem, OrderItemModifier + OrderStatus enum.
+"""Order, OrderItem, OrderItemModifier + OrderStatus / OrderChannel enums.
 
 Order is the bill. OrderItem is a single product line. OrderItemModifier is the
 concrete modifier the customer chose (with frozen price_delta from sale time).
@@ -25,14 +25,44 @@ class OrderStatus(StrEnum):
     REFUNDED = "refunded"
 
 
+class OrderChannel(StrEnum):
+    DINE_IN = "dine_in"
+    TAKEAWAY = "takeaway"
+    DELIVERY = "delivery"
+
+
 class Order(SQLModel, table=True):
     __tablename__ = "orders"
 
     id: int | None = Field(default=None, primary_key=True)
-    total: Decimal = Field(default=Decimal("0.00"), max_digits=12, decimal_places=2)
+    # Human-friendly daily-rolling number like 20260528-0042. Generated in
+    # order_service. Unique index across the whole table.
+    order_number: str = Field(max_length=20, index=True, unique=True)
+    channel: OrderChannel = Field(default=OrderChannel.TAKEAWAY, index=True)
+    table_number: str | None = Field(default=None, max_length=16)
+
     status: OrderStatus = Field(default=OrderStatus.OPEN, index=True)
     user_id: int | None = Field(default=None, foreign_key="users.id", index=True)
     note: str | None = Field(default=None, max_length=255)
+
+    # ── Totals breakdown (snapshot at sale time) ────────────────────
+    # subtotal = sum(line.qty * line.unit_price) BEFORE discounts. If
+    # tax_inclusive=true, line prices already include VAT (Thai default).
+    subtotal: Decimal = Field(default=Decimal("0.00"), max_digits=12, decimal_places=2)
+    discount_total: Decimal = Field(default=Decimal("0.00"), max_digits=12, decimal_places=2)
+    service_charge: Decimal = Field(default=Decimal("0.00"), max_digits=12, decimal_places=2)
+    service_charge_rate: Decimal = Field(default=Decimal("0.0000"), max_digits=5, decimal_places=4)
+    tax_total: Decimal = Field(default=Decimal("0.00"), max_digits=12, decimal_places=2)
+    tax_rate: Decimal = Field(default=Decimal("0.0000"), max_digits=5, decimal_places=4)
+    tax_inclusive: bool = Field(default=True)
+    tip_total: Decimal = Field(default=Decimal("0.00"), max_digits=12, decimal_places=2)
+    rounding_adjustment: Decimal = Field(default=Decimal("0.00"), max_digits=12, decimal_places=2)
+    # Grand total — what the customer owes. Subsequent payment milestones
+    # will keep `paid_total` and `change_due` in sync with the Payments rows.
+    total: Decimal = Field(default=Decimal("0.00"), max_digits=12, decimal_places=2)
+    paid_total: Decimal = Field(default=Decimal("0.00"), max_digits=12, decimal_places=2)
+    change_due: Decimal = Field(default=Decimal("0.00"), max_digits=12, decimal_places=2)
+
     created_at: datetime = Field(default_factory=now_utc, index=True, nullable=False)
     updated_at: datetime = Field(default_factory=now_utc, nullable=False)
 

@@ -1,5 +1,6 @@
 """Tests for AI strategy + LLM summarizer + /ai/strategy/daily."""
 
+import itertools
 from decimal import Decimal
 from typing import Any
 
@@ -13,6 +14,14 @@ from app.ai.strategy import margin, market_basket, recommender
 from app.core.config import get_settings
 from app.models import Category, Order, OrderItem, OrderStatus, Product
 from app.utils.datetime import now_utc
+
+# Unique-per-call placeholder so fixtures satisfy the NOT NULL/unique
+# ``order_number`` introduced in M1 without needing the live generator.
+_seq = itertools.count(1)
+
+
+def _on() -> str:
+    return f"T-STRAT-{next(_seq):05d}"
 
 
 def _bearer(token: str) -> dict[str, str]:
@@ -54,7 +63,12 @@ def basket_data_fixture(session: Session) -> dict[str, Product]:
 
     now = now_utc()
     for _ in range(7):
-        order = Order(total=Decimal("110"), status=OrderStatus.OPEN, created_at=now)
+        order = Order(
+            order_number=_on(),
+            total=Decimal("110"),
+            status=OrderStatus.OPEN,
+            created_at=now,
+        )
         session.add(order)
         session.flush()
         session.add(
@@ -76,7 +90,12 @@ def basket_data_fixture(session: Session) -> dict[str, Product]:
 
     # 3 single-item orders — excluded from market basket
     for _ in range(3):
-        order = Order(total=Decimal("55"), status=OrderStatus.OPEN, created_at=now)
+        order = Order(
+            order_number=_on(),
+            total=Decimal("55"),
+            status=OrderStatus.OPEN,
+            created_at=now,
+        )
         session.add(order)
         session.flush()
         session.add(

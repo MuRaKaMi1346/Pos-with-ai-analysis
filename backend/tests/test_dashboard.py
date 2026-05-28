@@ -4,6 +4,7 @@ Direct-insert orders (no stock side-effects) so we can control created_at +
 status easily and keep tests fast.
 """
 
+import itertools
 from datetime import timedelta
 from decimal import Decimal
 
@@ -19,6 +20,12 @@ from app.models import (
     Product,
 )
 from app.utils.datetime import now_utc
+
+_seq = itertools.count(1)
+
+
+def _on() -> str:
+    return f"T-DASH-{next(_seq):05d}"
 
 
 def _bearer(token: str) -> dict[str, str]:
@@ -60,6 +67,7 @@ def dashboard_data_fixture(session: Session) -> dict[str, object]:
         (yesterday, 1),
     ]:
         order = Order(
+            order_number=_on(),
             total=Decimal("65.00") * qty,
             status=OrderStatus.OPEN,
             created_at=created,
@@ -77,6 +85,7 @@ def dashboard_data_fixture(session: Session) -> dict[str, object]:
 
     # One voided order — must be excluded from every aggregate
     voided = Order(
+        order_number=_on(),
         total=Decimal("9999.00"),
         status=OrderStatus.VOIDED,
         created_at=now,

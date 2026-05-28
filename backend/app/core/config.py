@@ -1,5 +1,6 @@
 """Application settings loaded from environment / .env via pydantic-settings."""
 
+from decimal import Decimal
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -37,6 +38,19 @@ class Settings(BaseSettings):
 
     # ── Rate limit ─────────────────────────────────────────────────
     rate_limit_login: str = "10/minute"
+
+    # ── POS totals (M1 defaults; migrates to KV settings table in M10) ─
+    # Thai default: prices already include VAT → tax_inclusive=true,
+    # tax_rate=0.07. Service charge is off by default.
+    pos_tax_rate: Decimal = Decimal("0.07")
+    pos_tax_inclusive: bool = True
+    pos_service_charge_rate: Decimal = Decimal("0.00")
+    # Thai accounting practice: service charge first, then VAT on
+    # (subtotal + service). Flip if your jurisdiction needs VAT first.
+    pos_service_charge_before_vat: bool = True
+    # "TWO_DECIMALS" — round bill to 2dp; "NEAREST_BAHT" — round to whole
+    # bahts and store the delta in rounding_adjustment.
+    pos_rounding_mode: str = "TWO_DECIMALS"
 
     # ── AI / Ollama ────────────────────────────────────────────────
     ollama_base_url: str = "http://localhost:11434"

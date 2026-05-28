@@ -1,5 +1,6 @@
 """Tests for AI forecasting module + /ai endpoints."""
 
+import itertools
 from datetime import timedelta
 from decimal import Decimal
 from pathlib import Path
@@ -27,6 +28,13 @@ from app.models import (
     Unit,
 )
 from app.utils.datetime import now_utc
+
+_seq = itertools.count(1)
+
+
+def _on() -> str:
+    """Unique placeholder order_number for raw-fixture Orders (M1+)."""
+    return f"T-AI-{next(_seq):05d}"
 
 
 def _bearer(token: str) -> dict[str, str]:
@@ -181,6 +189,7 @@ def test_train_then_forecast_for_real_product(
     for i in range(60):
         when = base - timedelta(days=60 - i)
         order = Order(
+            order_number=_on(),
             total=Decimal("65.00"),
             status=OrderStatus.OPEN,
             created_at=when,
@@ -245,6 +254,7 @@ def test_purchase_suggestion_aggregates_via_bom(
     for i in range(60):
         when = base - timedelta(days=60 - i)
         order = Order(
+            order_number=_on(),
             total=Decimal("55.00"),
             status=OrderStatus.OPEN,
             created_at=when,
