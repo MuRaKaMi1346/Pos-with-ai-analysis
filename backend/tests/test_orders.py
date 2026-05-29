@@ -27,13 +27,14 @@ def _bearer(token: str) -> dict[str, str]:
 # ── Happy path ───────────────────────────────────────────────────────
 
 
-def test_create_order_deducts_stock_per_bom(
+def test_create_order_does_not_deduct_stock_until_sent(
     client: TestClient,
     admin_token: str,
     product_latte: Product,
     stocked_pantry: None,
     session: Session,
 ) -> None:
+    """M3 timing change: create returns 201 + bill, but stock is untouched."""
     _ = stocked_pantry
     response = client.post(
         "/api/v1/orders/",
@@ -45,24 +46,42 @@ def test_create_order_deducts_stock_per_bom(
     # Default Thai POS: VAT inclusive 7%, no service charge → total = subtotal = 65*2.
     assert Decimal(body["subtotal"]) == Decimal("130.00")
     assert Decimal(body["total"]) == Decimal("130.00")
-    # VAT extracted from the inclusive amount for receipt: 130 - 130/1.07 ≈ 8.50
     assert Decimal(body["tax_total"]) == Decimal("8.50")
-    assert body["tax_inclusive"] is True
-    assert body["channel"] == "takeaway"
-    assert body["order_number"].startswith(body["created_at"][:10].replace("-", "")), body[
-        "order_number"
-    ]
     assert body["status"] == "open"
-    assert len(body["items"]) == 1
-    assert body["items"][0]["qty"] == 2
-    assert body["items"][0]["unit_price"] == "65.00"
-
-    # Stock: 1000g - 18*2 = 964g; 5000ml - 180*2 = 4640ml
+    assert body["sent_to_kitchen_at"] is None
+    assert body["items"][0]["kitchen_status"] == "pending"
+    # Stock untouched: 1000g + 5000ml unchanged.
     stocks = {s.ingredient_id: s.quantity for s in session.exec(select(StockLevel)).all()}
-    assert Decimal("964") in stocks.values()
-    assert Decimal("4640") in stocks.values()
+    assert Decimal("1000") in stocks.values()
+    assert Decimal("5000") in stocks.values()
+    assert session.exec(select(StockMovement)).all() == []
 
-    # Sale movements (one per ingredient consumed)
+
+def test_send_to_kitchen_deducts_stock_per_bom(
+    client: TestClient,
+    admin_token: str,
+    product_latte: Product,
+    stocked_pantry: None,
+    session: Session,
+) -> None:
+    """Stock deduction now happens at send-to-kitchen, atomically."""
+    _ = stocked_pantry
+    create = client.post(
+        "/api/v1/orders/",
+        headers=_bearer(admin_token),
+        json={"items": [{"product_id": product_latte.id, "qty": 2}]},
+    )
+    assert create.status_code == 201
+    order_id = create.json()["id"]
+    send = client.post(f"/api/v1/orders/{order_id}/send-to-kitchen", headers=_bearer(admin_token))
+    assert send.status_code == 200
+    body = send.json()
+    assert body["sent_to_kitchen_at"] is not None
+    assert body["items"][0]["kitchen_status"] == "preparing"
+
+    stocks = {s.ingredient_id: s.quantity for s in session.exec(select(StockLevel)).all()}
+    assert Decimal("964") in stocks.values()  # 1000 - 18*2
+    assert Decimal("4640") in stocks.values()  # 5000 - 180*2
     sale_movements = session.exec(
         select(StockMovement).where(StockMovement.type == MovementType.SALE)
     ).all()
@@ -105,28 +124,32 @@ def test_create_order_with_modifier_adds_to_total(
 # ── Insufficient stock — must NOT mutate anything ────────────────────
 
 
-def test_create_order_insufficient_stock_returns_409_and_rolls_back(
+def test_send_to_kitchen_insufficient_stock_returns_409_and_rolls_back(
     client: TestClient,
     admin_token: str,
     product_latte: Product,
     ingredient_beans,  # type: ignore[no-untyped-def]
     session: Session,
 ) -> None:
+    """Pre-send the bill happily exists; send-to-kitchen is what catches stock."""
     # Only 10g beans — Latte needs 18g
     session.add(StockLevel(ingredient_id=ingredient_beans.id, quantity=Decimal("10")))
-    # No milk stock at all — also insufficient
     session.commit()
 
-    response = client.post(
+    create = client.post(
         "/api/v1/orders/",
         headers=_bearer(admin_token),
         json={"items": [{"product_id": product_latte.id, "qty": 1}]},
     )
-    assert response.status_code == 409
-    assert response.json()["code"] == "conflict"
-    assert "insufficient_stock" in response.json()["message"]
+    assert create.status_code == 201  # bill created — no stock check yet
+    order_id = create.json()["id"]
 
-    # Rollback verification: no new movements, beans stock unchanged at 10
+    send = client.post(f"/api/v1/orders/{order_id}/send-to-kitchen", headers=_bearer(admin_token))
+    assert send.status_code == 409
+    assert send.json()["code"] == "conflict"
+    assert "insufficient_stock" in send.json()["message"]
+
+    # Rollback verification: no movements, beans stock unchanged at 10.
     movements = session.exec(select(StockMovement)).all()
     assert len(movements) == 0
     beans_stock = session.exec(

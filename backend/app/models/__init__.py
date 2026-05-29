@@ -3,6 +3,7 @@
 from app.models.ingredient import Ingredient, Unit
 from app.models.inventory import MovementType, StockLevel, StockMovement, Waste
 from app.models.order import (
+    KitchenStatus,
     Order,
     OrderChannel,
     OrderItem,
@@ -23,6 +24,7 @@ from app.models.user import Role, User
 __all__ = [
     "Category",
     "Ingredient",
+    "KitchenStatus",
     "Modifier",
     "ModifierGroup",
     "MovementType",

@@ -212,7 +212,7 @@ def test_recipe_create_both_ids_returns_422(
 # ── Order: modifier recipe deducts its own ingredients ───────────────
 
 
-def test_order_with_modifier_recipe_deducts_modifier_ingredients(
+def test_send_with_modifier_recipe_deducts_modifier_ingredients(
     client: TestClient,
     admin_token: str,
     product_latte: Product,
@@ -221,7 +221,7 @@ def test_order_with_modifier_recipe_deducts_modifier_ingredients(
     ingredient_beans: Ingredient,
     session: Session,
 ) -> None:
-    """Extra shot consumes 7 g beans on top of the latte's 18 g."""
+    """Extra shot consumes 7 g beans on top of the latte's 18 g — at send-to-kitchen."""
     _ = stocked_pantry
     session.add(
         Recipe(
@@ -233,7 +233,7 @@ def test_order_with_modifier_recipe_deducts_modifier_ingredients(
     )
     session.commit()
 
-    response = client.post(
+    create = client.post(
         "/api/v1/orders/",
         headers=_bearer(admin_token),
         json={
@@ -246,24 +246,25 @@ def test_order_with_modifier_recipe_deducts_modifier_ingredients(
             ]
         },
     )
-    assert response.status_code == 201
-    # Beans: 1000 g - 18 (latte) - 7 (extra shot) = 975 g
+    assert create.status_code == 201
+    order_id = create.json()["id"]
+    send = client.post(f"/api/v1/orders/{order_id}/send-to-kitchen", headers=_bearer(admin_token))
+    assert send.status_code == 200
+
     beans_stock = session.exec(
         select(StockLevel).where(StockLevel.ingredient_id == ingredient_beans.id)
     ).one()
-    assert beans_stock.quantity == Decimal("975")
-    # Sale movements: one for the latte's 18 g, one for the extra shot's 7 g
+    assert beans_stock.quantity == Decimal("975")  # 1000 - (18 + 7)
     bean_moves = session.exec(
         select(StockMovement)
         .where(StockMovement.type == MovementType.SALE)
         .where(StockMovement.ingredient_id == ingredient_beans.id)
     ).all()
-    # Order service accumulates per ingredient, so a single movement covers both.
     assert len(bean_moves) == 1
     assert bean_moves[0].qty == Decimal("-25")
 
 
-def test_order_modifier_recipe_low_stock_rolls_back(
+def test_send_with_modifier_recipe_low_stock_rolls_back(
     client: TestClient,
     admin_token: str,
     product_latte: Product,
@@ -272,10 +273,8 @@ def test_order_modifier_recipe_low_stock_rolls_back(
     ingredient_beans: Ingredient,
     session: Session,
 ) -> None:
-    """Modifier needs 7 g but only 5 g free → 409, nothing changes."""
+    """Modifier recipe pushes total demand past stock — send-to-kitchen 409s."""
     _ = stocked_pantry
-    # Modifier recipe demands 1000 g — far more than the 1 kg on hand combined
-    # with the latte's 18 g.
     session.add(
         Recipe(
             modifier_id=modifier_extra_shot.id,
@@ -286,7 +285,7 @@ def test_order_modifier_recipe_low_stock_rolls_back(
     )
     session.commit()
 
-    response = client.post(
+    create = client.post(
         "/api/v1/orders/",
         headers=_bearer(admin_token),
         json={
@@ -299,9 +298,13 @@ def test_order_modifier_recipe_low_stock_rolls_back(
             ]
         },
     )
-    assert response.status_code == 409
-    assert "insufficient_stock" in response.json()["message"]
-    # Stock untouched
+    assert create.status_code == 201
+    order_id = create.json()["id"]
+
+    send = client.post(f"/api/v1/orders/{order_id}/send-to-kitchen", headers=_bearer(admin_token))
+    assert send.status_code == 409
+    assert "insufficient_stock" in send.json()["message"]
+
     beans_stock = session.exec(
         select(StockLevel).where(StockLevel.ingredient_id == ingredient_beans.id)
     ).one()

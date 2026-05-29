@@ -1,21 +1,20 @@
-"""Order creation + totals computation.
+"""Order lifecycle + totals computation.
 
-Spec section 4 (Database) — atomic stock deduction per BOM:
+State machine (M3):
 
-    เมื่อสร้าง Order:
-      สำหรับแต่ละ OrderItem:
-        ดึง Recipe ของ product นั้น
-        สำหรับแต่ละบรรทัดสูตร:
-          ลด StockLevel ของ ingredient ตาม (qty ในสูตร x จำนวนที่สั่ง)
-          บันทึก StockMovement type=sale
-      ทำใน transaction เดียว (ถ้าพังให้ rollback ทั้งหมด)
+    POST /orders/           → status=OPEN, no stock action
+        ↕ hold / resume     status flips OPEN ↔ HOLD (still no stock)
+    PATCH /orders/{id}/items  replace lines (only pre-send, status OPEN|HOLD)
+    POST .../send-to-kitchen  stock check + deduction in one txn;
+                              sets sent_to_kitchen_at; items PENDING→PREPARING
+    POST .../items/{id}/void  reverse that line's stock (if sent),
+                              mark is_voided + kitchen_status=CANCELLED
+    POST .../void             reverse remaining stock (if sent),
+                              status=VOIDED + audit fields
 
-M1 (`pos-pro-upgrade` §2.1) adds the totals breakdown, channel + table,
-and a human-friendly per-day rolling ``order_number`` (``YYYYMMDD-NNNN``).
-
-``calculate_totals`` is the **only** place totals are derived (per the
-pro-upgrade spec §4). Discounts (M4), shifts (M8), and split bills (M3)
-extend this helper without forking it.
+``calculate_totals`` remains the only place totals are derived
+(pro-upgrade §4). Subsequent milestones layer in discounts (M4),
+payments (M5), refunds (M6), shifts (M8) without forking this helper.
 """
 
 from collections import defaultdict
@@ -29,9 +28,10 @@ from sqlalchemy.sql import text
 from sqlmodel import Session
 
 from app.core.config import Settings
-from app.core.exceptions import ConflictError, NotFoundError
+from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError
 from app.models import (
     Ingredient,
+    KitchenStatus,
     Modifier,
     MovementType,
     Order,
@@ -39,11 +39,13 @@ from app.models import (
     OrderItemModifier,
     OrderStatus,
     Product,
+    Role,
     StockLevel,
     StockMovement,
+    User,
 )
 from app.repositories import inventory_repo, order_repo
-from app.schemas.order import OrderCreate
+from app.schemas.order import OrderCreate, OrderItemsReplace
 from app.utils.datetime import now_utc
 
 _TWO_DP = Decimal("0.01")
@@ -81,20 +83,9 @@ def calculate_totals(
     discount_total: Decimal = Decimal("0.00"),
     settings: Settings,
 ) -> TotalsBreakdown:
-    """Compute the bill breakdown from a subtotal + settings snapshot.
-
-    M1: discount_total defaults to 0; M4 will populate it from
-    ``OrderDiscount`` / ``OrderItemDiscount`` rows.
-
-    Tax-inclusive (Thai default): line prices already include VAT, so the
-    grand total is ``subtotal + service - discount + tip + rounding``; we
-    only *extract* ``tax_total`` for the receipt by ``base - base/(1+rate)``.
-
-    Tax-exclusive: VAT is added on top. ``service_charge_before_vat`` toggles
-    whether service is computed on the pre- or post-VAT amount.
-    """
+    """Compute the bill breakdown from a subtotal + settings snapshot."""
     discount_total = _q(discount_total)
-    base = subtotal - discount_total  # discounted subtotal
+    base = subtotal - discount_total
     service_rate = settings.pos_service_charge_rate
     tax_rate = settings.pos_tax_rate
     tax_inclusive = settings.pos_tax_inclusive
@@ -103,7 +94,6 @@ def calculate_totals(
     if tax_inclusive:
         service_charge = _q(base * service_rate)
         gross_pre_tip = base + service_charge
-        # Extract VAT from the inclusive amount for receipt reporting.
         tax_total = (
             _q(gross_pre_tip - gross_pre_tip / (Decimal("1") + tax_rate))
             if tax_rate > 0
@@ -119,11 +109,10 @@ def calculate_totals(
             service_charge = _q((base + tax_total) * service_rate)
         total_unrounded = base + service_charge + tax_total + tip
 
-    # Rounding
     if settings.pos_rounding_mode == "NEAREST_BAHT":
         total = total_unrounded.quantize(_WHOLE, rounding=ROUND_HALF_UP)
         rounding_adjustment = total - total_unrounded
-    else:  # TWO_DECIMALS (default)
+    else:
         total = _q(total_unrounded)
         rounding_adjustment = Decimal("0.00")
 
@@ -141,16 +130,25 @@ def calculate_totals(
     )
 
 
+def _apply_breakdown(order: Order, breakdown: TotalsBreakdown) -> None:
+    """Persist a fresh ``TotalsBreakdown`` back onto the Order columns."""
+    order.subtotal = breakdown.subtotal
+    order.discount_total = breakdown.discount_total
+    order.service_charge = breakdown.service_charge
+    order.service_charge_rate = breakdown.service_charge_rate
+    order.tax_total = breakdown.tax_total
+    order.tax_rate = breakdown.tax_rate
+    order.tax_inclusive = breakdown.tax_inclusive
+    order.tip_total = breakdown.tip_total
+    order.rounding_adjustment = breakdown.rounding_adjustment
+    order.total = breakdown.total
+
+
 # ── Order number ────────────────────────────────────────────────────
 
 
 def _next_order_number(session: Session, now: datetime) -> str:
-    """Return next per-day rolling number like ``20260528-0042``.
-
-    Reads ``MAX(SUBSTR(order_number, 10) AS INTEGER)`` for today's prefix.
-    A UNIQUE constraint on ``order_number`` is the ultimate safety net —
-    ``create_order`` catches the rare race-loss and retries.
-    """
+    """Per-day rolling number ``YYYYMMDD-NNNN``. UNIQUE acts as a tiebreaker."""
     prefix = now.strftime("%Y%m%d")
     row = session.execute(
         text(
@@ -163,7 +161,7 @@ def _next_order_number(session: Session, now: datetime) -> str:
     return f"{prefix}-{next_n:04d}"
 
 
-# ── Read helpers (unchanged) ────────────────────────────────────────
+# ── Read helpers ────────────────────────────────────────────────────
 
 
 def get_or_404(session: Session, order_id: int) -> Order:
@@ -183,6 +181,110 @@ def list_recent(
     return order_repo.list_recent(session, user_id=user_id, offset=offset, limit=limit)
 
 
+# ── Recipe walking helpers ──────────────────────────────────────────
+
+
+def _line_requirements(item: OrderItem) -> dict[int, Decimal]:
+    """How much of each ingredient one OrderItem (including its modifiers) consumes."""
+    reqs: dict[int, Decimal] = defaultdict(lambda: Decimal("0"))
+    if item.product is not None:
+        for recipe in item.product.recipes:
+            reqs[recipe.ingredient_id] += recipe.qty * item.qty
+    for oim in item.modifiers:
+        if oim.modifier is None:
+            continue
+        for recipe in oim.modifier.recipes:
+            reqs[recipe.ingredient_id] += recipe.qty * item.qty
+    return reqs
+
+
+def _sum_requirements(items: Sequence[OrderItem]) -> dict[int, Decimal]:
+    total: dict[int, Decimal] = defaultdict(lambda: Decimal("0"))
+    for item in items:
+        if item.is_voided:
+            continue
+        for ingredient_id, qty in _line_requirements(item).items():
+            total[ingredient_id] += qty
+    return total
+
+
+def _subtotal_from_items(items: Sequence[OrderItem]) -> Decimal:
+    subtotal = Decimal("0.00")
+    for item in items:
+        if item.is_voided:
+            continue
+        line = item.unit_price * item.qty
+        for oim in item.modifiers:
+            line += oim.price_delta * item.qty
+        subtotal += line
+    return subtotal
+
+
+def _check_and_deduct_stock(
+    session: Session,
+    requirements: dict[int, Decimal],
+    *,
+    order_id: int,
+    user_id: int,
+    now: datetime,
+    movement_ref_prefix: str = "order",
+) -> None:
+    """Validate availability then write StockMovements + decrement StockLevel."""
+    stocks: dict[int, StockLevel] = {}
+    for ingredient_id, required in requirements.items():
+        stock = inventory_repo.get_stock(session, ingredient_id)
+        if stock is None or stock.quantity < required:
+            ingredient = session.get(Ingredient, ingredient_id)
+            name = ingredient.name if ingredient else f"ingredient:{ingredient_id}"
+            raise ConflictError(f"insufficient_stock:{name}")
+        stocks[ingredient_id] = stock
+
+    for ingredient_id, required in requirements.items():
+        stock = stocks[ingredient_id]
+        stock.quantity = stock.quantity - required
+        stock.updated_at = now
+        session.add(stock)
+        session.add(
+            StockMovement(
+                ingredient_id=ingredient_id,
+                type=MovementType.SALE,
+                qty=-required,
+                ref=f"{movement_ref_prefix}:{order_id}",
+                user_id=user_id,
+            )
+        )
+
+
+def _reverse_stock(
+    session: Session,
+    requirements: dict[int, Decimal],
+    *,
+    order_id: int,
+    user_id: int,
+    now: datetime,
+    movement_ref: str,
+) -> None:
+    """Add back ingredient quantities + write RETURN movements."""
+    for ingredient_id, qty in requirements.items():
+        stock = inventory_repo.get_stock(session, ingredient_id)
+        if stock is None:
+            stock = StockLevel(ingredient_id=ingredient_id, quantity=Decimal("0"))
+            session.add(stock)
+            session.flush()
+        stock.quantity = stock.quantity + qty
+        stock.updated_at = now
+        session.add(stock)
+        session.add(
+            StockMovement(
+                ingredient_id=ingredient_id,
+                type=MovementType.RETURN,
+                qty=qty,
+                ref=movement_ref,
+                user_id=user_id,
+            )
+        )
+
+
 # ── Create ──────────────────────────────────────────────────────────
 
 
@@ -193,17 +295,9 @@ def create_order(
     payload: OrderCreate,
     settings: Settings,
 ) -> Order:
-    """Create Order + items + deduct stock per BOM. All-or-nothing.
-
-    M1 changes:
-    - Sets ``order_number`` / ``channel`` / ``table_number``.
-    - Records the totals breakdown (subtotal, service, tax, tip, total).
-    - Stock-deduction timing unchanged in M1 (will move to send-to-kitchen
-      in M3 — see milestone plan).
-    """
+    """Open a new bill. No stock check / deduction — those move to send-to-kitchen (M3)."""
     items_in = payload.items
 
-    # ── 1. Resolve products ──────────────────────────────────────────
     products_by_id: dict[int, Product] = {}
     for item_in in items_in:
         product = session.get(Product, item_in.product_id)
@@ -211,7 +305,6 @@ def create_order(
             raise NotFoundError(f"product_not_found:{item_in.product_id}")
         products_by_id[product.id] = product  # type: ignore[index]
 
-    # ── 2. Resolve modifiers (need price_delta + recipes snapshot) ───
     modifiers_by_id: dict[int, Modifier] = {}
     for item_in in items_in:
         for mod_id in item_in.modifier_ids:
@@ -222,31 +315,6 @@ def create_order(
                 raise NotFoundError(f"modifier_not_found:{mod_id}")
             modifiers_by_id[mod_id] = modifier
 
-    # ── 3. Compute total ingredient requirements ─────────────────────
-    # Product recipes consume `recipe.qty * line.qty`. Modifier recipes
-    # also consume `recipe.qty * line.qty` — one modifier-line covers the
-    # whole multiplier (e.g. 3 lattes with extra-shot each = 3 extra shots).
-    requirements: dict[int, Decimal] = defaultdict(lambda: Decimal("0"))
-    for item_in in items_in:
-        product = products_by_id[item_in.product_id]
-        for recipe in product.recipes:
-            requirements[recipe.ingredient_id] += recipe.qty * item_in.qty
-        for mod_id in item_in.modifier_ids:
-            modifier = modifiers_by_id[mod_id]
-            for recipe in modifier.recipes:
-                requirements[recipe.ingredient_id] += recipe.qty * item_in.qty
-
-    # ── 4. Stock availability check (no writes yet) ──────────────────
-    stocks_by_ingredient: dict[int, StockLevel] = {}
-    for ingredient_id, required in requirements.items():
-        stock = inventory_repo.get_stock(session, ingredient_id)
-        if stock is None or stock.quantity < required:
-            ingredient = session.get(Ingredient, ingredient_id)
-            name = ingredient.name if ingredient else f"ingredient:{ingredient_id}"
-            raise ConflictError(f"insufficient_stock:{name}")
-        stocks_by_ingredient[ingredient_id] = stock
-
-    # ── 5. Build subtotal up-front so we can populate the snapshot ──
     subtotal = Decimal("0.00")
     for item_in in items_in:
         product = products_by_id[item_in.product_id]
@@ -256,8 +324,6 @@ def create_order(
         subtotal += line
 
     breakdown = calculate_totals(subtotal, tip=payload.tip, settings=settings)
-
-    # ── 6. Insert the Order with order_number — retry on UNIQUE race ─
     now = now_utc()
     order = _insert_order_with_number(
         session,
@@ -268,7 +334,6 @@ def create_order(
     )
     assert order.id is not None
 
-    # ── 7. Insert items + item modifiers ─────────────────────────────
     for item_in in items_in:
         product = products_by_id[item_in.product_id]
         item = OrderItem(
@@ -278,7 +343,7 @@ def create_order(
             unit_price=product.price,
         )
         session.add(item)
-        session.flush()  # populate item.id
+        session.flush()
         assert item.id is not None
         for mod_id in item_in.modifier_ids:
             session.add(
@@ -289,23 +354,6 @@ def create_order(
                 )
             )
 
-    # ── 8. Deduct stock + record sale movements ──────────────────────
-    for ingredient_id, required in requirements.items():
-        stock = stocks_by_ingredient[ingredient_id]
-        stock.quantity = stock.quantity - required
-        stock.updated_at = now
-        session.add(stock)
-        session.add(
-            StockMovement(
-                ingredient_id=ingredient_id,
-                type=MovementType.SALE,
-                qty=-required,
-                ref=f"order:{order.id}",
-                user_id=user_id,
-            )
-        )
-
-    # ── 9. Commit once at the end ────────────────────────────────────
     session.commit()
     session.refresh(order)
     return order
@@ -319,7 +367,6 @@ def _insert_order_with_number(
     breakdown: TotalsBreakdown,
     now: datetime,
 ) -> Order:
-    """Race-safe Order insert. Retries on UNIQUE(order_number) collision."""
     last_err: IntegrityError | None = None
     for _ in range(_ORDER_NUMBER_MAX_RETRIES):
         order = Order(
@@ -351,3 +398,283 @@ def _insert_order_with_number(
             continue
         return order
     raise ConflictError("order_number_collision") from last_err
+
+
+# ── Lifecycle: hold / resume ────────────────────────────────────────
+
+
+def hold_order(session: Session, order: Order) -> Order:
+    if order.status != OrderStatus.OPEN:
+        raise ConflictError(f"cannot_hold_status:{order.status}")
+    if order.sent_to_kitchen_at is not None:
+        raise ConflictError("cannot_hold_after_send")
+    order.status = OrderStatus.HOLD
+    order.updated_at = now_utc()
+    session.add(order)
+    session.commit()
+    session.refresh(order)
+    return order
+
+
+def resume_order(session: Session, order: Order) -> Order:
+    if order.status != OrderStatus.HOLD:
+        raise ConflictError(f"cannot_resume_status:{order.status}")
+    order.status = OrderStatus.OPEN
+    order.updated_at = now_utc()
+    session.add(order)
+    session.commit()
+    session.refresh(order)
+    return order
+
+
+# ── Lifecycle: replace items (PATCH /items) ─────────────────────────
+
+
+def replace_items(
+    session: Session,
+    order: Order,
+    payload: OrderItemsReplace,
+    settings: Settings,
+) -> Order:
+    """Diff-and-replace the bill's items. Allowed only pre-send (OPEN | HOLD).
+
+    Each incoming line with an ``id`` updates the matching live (non-voided)
+    line in place. Lines without an ``id`` are appended. Live lines absent
+    from the payload are hard-deleted (no audit needed pre-send). Voided
+    lines are left untouched (audit).
+    """
+    if order.status not in {OrderStatus.OPEN, OrderStatus.HOLD}:
+        raise ConflictError(f"cannot_edit_status:{order.status}")
+    if order.sent_to_kitchen_at is not None:
+        raise ConflictError("cannot_edit_after_send")
+
+    live_by_id: dict[int, OrderItem] = {
+        item.id: item for item in order.items if item.id is not None and not item.is_voided
+    }
+    incoming_ids = {p.id for p in payload.items if p.id is not None}
+    unknown = incoming_ids - live_by_id.keys()
+    if unknown:
+        raise NotFoundError(f"order_item_not_found:{next(iter(unknown))}")
+
+    # ── 1. Resolve products + modifiers once for the whole payload ──
+    products_by_id: dict[int, Product] = {}
+    modifiers_by_id: dict[int, Modifier] = {}
+    for line in payload.items:
+        product = session.get(Product, line.product_id)
+        if product is None or not product.is_active:
+            raise NotFoundError(f"product_not_found:{line.product_id}")
+        products_by_id[line.product_id] = product
+        for mod_id in line.modifier_ids:
+            if mod_id in modifiers_by_id:
+                continue
+            modifier = session.get(Modifier, mod_id)
+            if modifier is None:
+                raise NotFoundError(f"modifier_not_found:{mod_id}")
+            modifiers_by_id[mod_id] = modifier
+
+    # ── 2. Delete live lines absent from the new list ───────────────
+    keep_ids = {p.id for p in payload.items if p.id is not None}
+    for live_id, item in live_by_id.items():
+        if live_id in keep_ids:
+            continue
+        # Hard-delete the modifiers first to clear the FK refs.
+        for oim in list(item.modifiers):
+            session.delete(oim)
+        session.delete(item)
+
+    # ── 3. Update kept lines + append new ones ──────────────────────
+    assert order.id is not None
+    for line in payload.items:
+        product = products_by_id[line.product_id]
+        if line.id is not None:
+            item = live_by_id[line.id]
+            item.product_id = product.id  # type: ignore[assignment]
+            item.qty = line.qty
+            item.unit_price = product.price
+            # Replace modifiers wholesale rather than diffing — POS UI
+            # treats the modifier set as one-shot per line.
+            for oim in list(item.modifiers):
+                session.delete(oim)
+            session.flush()
+            assert item.id is not None
+            for mod_id in line.modifier_ids:
+                session.add(
+                    OrderItemModifier(
+                        order_item_id=item.id,
+                        modifier_id=mod_id,
+                        price_delta=modifiers_by_id[mod_id].price_delta,
+                    )
+                )
+        else:
+            new_item = OrderItem(
+                order_id=order.id,
+                product_id=product.id,  # type: ignore[arg-type]
+                qty=line.qty,
+                unit_price=product.price,
+            )
+            session.add(new_item)
+            session.flush()
+            assert new_item.id is not None
+            for mod_id in line.modifier_ids:
+                session.add(
+                    OrderItemModifier(
+                        order_item_id=new_item.id,
+                        modifier_id=mod_id,
+                        price_delta=modifiers_by_id[mod_id].price_delta,
+                    )
+                )
+
+    session.flush()
+    session.refresh(order)
+    # ── 4. Recompute totals from the new line set ───────────────────
+    breakdown = calculate_totals(
+        _subtotal_from_items(order.items),
+        tip=order.tip_total,
+        discount_total=order.discount_total,
+        settings=settings,
+    )
+    _apply_breakdown(order, breakdown)
+    order.updated_at = now_utc()
+    session.add(order)
+    session.commit()
+    session.refresh(order)
+    return order
+
+
+# ── Lifecycle: send to kitchen ──────────────────────────────────────
+
+
+def send_to_kitchen(session: Session, order: Order, *, user_id: int) -> Order:
+    if order.status != OrderStatus.OPEN:
+        raise ConflictError(f"cannot_send_status:{order.status}")
+    if order.sent_to_kitchen_at is not None:
+        raise ConflictError("already_sent_to_kitchen")
+    live_items = [item for item in order.items if not item.is_voided]
+    if not live_items:
+        raise ConflictError("empty_bill")
+
+    assert order.id is not None
+    now = now_utc()
+    requirements = _sum_requirements(live_items)
+    _check_and_deduct_stock(
+        session,
+        requirements,
+        order_id=order.id,
+        user_id=user_id,
+        now=now,
+    )
+
+    order.sent_to_kitchen_at = now
+    order.updated_at = now
+    for item in live_items:
+        item.kitchen_status = KitchenStatus.PREPARING
+        session.add(item)
+    session.add(order)
+    session.commit()
+    session.refresh(order)
+    return order
+
+
+# ── Lifecycle: void line / void bill ────────────────────────────────
+
+
+def _require_admin(actor: User, code: str) -> None:
+    if actor.role != Role.ADMIN:
+        raise ForbiddenError(code)
+
+
+def void_item(
+    session: Session,
+    order: Order,
+    item_id: int,
+    *,
+    reason: str,
+    actor: User,
+    settings: Settings,
+) -> Order:
+    item = next((i for i in order.items if i.id == item_id), None)
+    if item is None:
+        raise NotFoundError("order_item_not_found")
+    if item.is_voided:
+        raise ConflictError("item_already_voided")
+    if order.status in {OrderStatus.VOIDED, OrderStatus.PAID, OrderStatus.REFUNDED}:
+        raise ConflictError(f"cannot_void_item_status:{order.status}")
+
+    sent = order.sent_to_kitchen_at is not None
+    if sent:
+        _require_admin(actor, "void_after_send_admin_only")
+
+    assert order.id is not None
+    assert actor.id is not None
+    now = now_utc()
+
+    if sent:
+        requirements = _line_requirements(item)
+        _reverse_stock(
+            session,
+            requirements,
+            order_id=order.id,
+            user_id=actor.id,
+            now=now,
+            movement_ref=f"void_item:{item_id}",
+        )
+
+    item.is_voided = True
+    item.voided_reason = reason
+    item.kitchen_status = KitchenStatus.CANCELLED
+    session.add(item)
+
+    breakdown = calculate_totals(
+        _subtotal_from_items(order.items),
+        tip=order.tip_total,
+        discount_total=order.discount_total,
+        settings=settings,
+    )
+    _apply_breakdown(order, breakdown)
+    order.updated_at = now
+    session.add(order)
+    session.commit()
+    session.refresh(order)
+    return order
+
+
+def void_order(
+    session: Session,
+    order: Order,
+    *,
+    reason: str,
+    actor: User,
+) -> Order:
+    _require_admin(actor, "void_admin_only")
+    if order.status in {OrderStatus.VOIDED, OrderStatus.PAID, OrderStatus.REFUNDED}:
+        raise ConflictError(f"cannot_void_status:{order.status}")
+
+    assert order.id is not None
+    assert actor.id is not None
+    now = now_utc()
+
+    if order.sent_to_kitchen_at is not None:
+        live_items = [item for item in order.items if not item.is_voided]
+        requirements = _sum_requirements(live_items)
+        if requirements:
+            _reverse_stock(
+                session,
+                requirements,
+                order_id=order.id,
+                user_id=actor.id,
+                now=now,
+                movement_ref=f"void_order:{order.id}",
+            )
+        for item in live_items:
+            item.kitchen_status = KitchenStatus.CANCELLED
+            session.add(item)
+
+    order.status = OrderStatus.VOIDED
+    order.voided_at = now
+    order.voided_by_user_id = actor.id
+    order.void_reason = reason
+    order.updated_at = now
+    session.add(order)
+    session.commit()
+    session.refresh(order)
+    return order

@@ -24,6 +24,7 @@ class MovementType(StrEnum):
     SALE = "sale"
     WASTE = "waste"
     ADJUST = "adjust"
+    RETURN = "return"  # M3: void-after-send / M6: refund-with-restock
 
 
 class StockLevel(SQLModel, table=True):

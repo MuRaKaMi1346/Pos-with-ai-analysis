@@ -19,7 +19,8 @@ if TYPE_CHECKING:
 
 
 class OrderStatus(StrEnum):
-    OPEN = "open"  # cart / in progress
+    OPEN = "open"  # cart / in progress (also: sent-to-kitchen but unpaid)
+    HOLD = "hold"  # parked / saved-for-later (M3) — no stock held
     PAID = "paid"
     VOIDED = "voided"
     REFUNDED = "refunded"
@@ -29,6 +30,17 @@ class OrderChannel(StrEnum):
     DINE_IN = "dine_in"
     TAKEAWAY = "takeaway"
     DELIVERY = "delivery"
+
+
+class KitchenStatus(StrEnum):
+    """Per-line kitchen progress (M3 sets PENDING/PREPARING/CANCELLED; the KDS
+    view in M9 will surface READY/SERVED transitions)."""
+
+    PENDING = "pending"
+    PREPARING = "preparing"
+    READY = "ready"
+    SERVED = "served"
+    CANCELLED = "cancelled"
 
 
 class Order(SQLModel, table=True):
@@ -63,6 +75,16 @@ class Order(SQLModel, table=True):
     paid_total: Decimal = Field(default=Decimal("0.00"), max_digits=12, decimal_places=2)
     change_due: Decimal = Field(default=Decimal("0.00"), max_digits=12, decimal_places=2)
 
+    # ── Lifecycle timestamps (M3) ────────────────────────────────────
+    # NULL until the cashier hits "Send to kitchen" — stock is deducted at
+    # that moment, not at create-time. Subsequent edits to lines are
+    # blocked once this is set; per-line void with a reason is still
+    # allowed (admin-only).
+    sent_to_kitchen_at: datetime | None = Field(default=None)
+    voided_at: datetime | None = Field(default=None)
+    voided_by_user_id: int | None = Field(default=None, foreign_key="users.id")
+    void_reason: str | None = Field(default=None, max_length=255)
+
     created_at: datetime = Field(default_factory=now_utc, index=True, nullable=False)
     updated_at: datetime = Field(default_factory=now_utc, nullable=False)
 
@@ -79,6 +101,13 @@ class OrderItem(SQLModel, table=True):
     qty: int = Field(default=1, ge=1)
     unit_price: Decimal = Field(max_digits=10, decimal_places=2)
     """Snapshot of product.price at sale time — never recompute from product."""
+
+    # ── Kitchen lifecycle + void (M3) ────────────────────────────────
+    # Voided lines stay on the bill for audit but stop contributing to
+    # totals. When voided after send-to-kitchen, stock is reversed.
+    kitchen_status: KitchenStatus = Field(default=KitchenStatus.PENDING, index=True)
+    is_voided: bool = Field(default=False, index=True)
+    voided_reason: str | None = Field(default=None, max_length=255)
 
     order: Order = Relationship(back_populates="items")
     product: "Product" = Relationship(back_populates="order_items")
