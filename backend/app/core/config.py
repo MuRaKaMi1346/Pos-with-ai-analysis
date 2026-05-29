@@ -52,6 +52,13 @@ class Settings(BaseSettings):
     # bahts and store the delta in rounding_adjustment.
     pos_rounding_mode: str = "TWO_DECIMALS"
 
+    # ── POS discounts (M4 admin threshold) ──────────────────────────
+    # Ad-hoc / per-bill discounts above either threshold force an admin
+    # role check. The Discount catalog can also flip ``requires_admin``
+    # on individual entries regardless of size.
+    pos_discount_admin_threshold_pct: Decimal = Decimal("0.20")  # 20%
+    pos_discount_admin_threshold_amount: Decimal = Decimal("100.00")
+
     # ── AI / Ollama ────────────────────────────────────────────────
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "llama3.1:8b"

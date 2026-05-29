@@ -30,6 +30,7 @@ from sqlmodel import Session
 from app.core.config import Settings
 from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError
 from app.models import (
+    DiscountType,
     Ingredient,
     KitchenStatus,
     Modifier,
@@ -218,6 +219,112 @@ def _subtotal_from_items(items: Sequence[OrderItem]) -> Decimal:
             line += oim.price_delta * item.qty
         subtotal += line
     return subtotal
+
+
+def _line_subtotal(item: OrderItem) -> Decimal:
+    """Single line subtotal (pre-discount)."""
+    line = item.unit_price * item.qty
+    for oim in item.modifiers:
+        line += oim.price_delta * item.qty
+    return line
+
+
+def _compute_discount_total(order: Order) -> Decimal:
+    """Recompute every snapshot's ``amount_off`` against current bill state.
+
+    M4 stacking order: item discounts first (per line, capped at line
+    subtotal), then order discounts on the post-item-discount base
+    (each capped at its master ``max_discount_amount`` and the running
+    remainder so totals can't go negative). Voided line discounts stay
+    in the DB for audit but don't contribute.
+    """
+    item_total = Decimal("0.00")
+    for item in order.items:
+        if item.is_voided:
+            continue
+        line_base = _q(_line_subtotal(item))
+        line_discount = Decimal("0.00")
+        for d in item.discounts:
+            remaining = line_base - line_discount
+            amount = _q(line_base * d.value if d.type == DiscountType.PERCENT else d.value)
+            if amount > remaining:
+                amount = remaining
+            if amount < Decimal("0"):
+                amount = Decimal("0.00")
+            d.amount_off = amount
+            line_discount += amount
+        item_total += line_discount
+
+    bill_subtotal = _q(_subtotal_from_items(order.items))
+    order_base = bill_subtotal - item_total
+    order_total = Decimal("0.00")
+    for od in order.discounts:
+        remaining = order_base - order_total
+        amount = _q(order_base * od.value if od.type == DiscountType.PERCENT else od.value)
+        # Per-row master cap is applied in ``_apply_master_caps`` afterwards.
+        if amount > remaining:
+            amount = remaining
+        if amount < Decimal("0"):
+            amount = Decimal("0.00")
+        od.amount_off = amount
+        order_total += amount
+
+    return item_total + order_total
+
+
+def _apply_master_caps(session: Session, order: Order) -> None:
+    """Apply ``max_discount_amount`` from the master Discount to OrderDiscount rows.
+
+    Called after ``_compute_discount_total`` so percent calculations are
+    finalized; we then trim any row that exceeds its master cap and let
+    the caller redo the total (cheap — two passes).
+    """
+    from app.models import Discount
+
+    changed = False
+    for d in order.discounts:
+        if d.discount_id is None:
+            continue
+        master = session.get(Discount, d.discount_id)
+        if master is None or master.max_discount_amount is None:
+            continue
+        if d.amount_off > master.max_discount_amount:
+            d.amount_off = master.max_discount_amount
+            changed = True
+    if not changed:
+        return
+    # Second pass: re-sum order discounts to cap stacking.
+    bill_subtotal = _q(_subtotal_from_items(order.items))
+    item_total = sum(
+        (d.amount_off for item in order.items if not item.is_voided for d in item.discounts),
+        Decimal("0.00"),
+    )
+    order_base = bill_subtotal - item_total
+    running = Decimal("0.00")
+    for d in order.discounts:
+        cap_remaining = order_base - running
+        if d.amount_off > cap_remaining:
+            d.amount_off = max(cap_remaining, Decimal("0.00"))
+        running += d.amount_off
+
+
+def recompute_totals(session: Session, order: Order, settings: Settings) -> None:
+    """Recompute ``discount_total`` then the rest of the breakdown; persist."""
+    _compute_discount_total(order)
+    _apply_master_caps(session, order)
+    discount_total = sum(
+        (d.amount_off for item in order.items if not item.is_voided for d in item.discounts),
+        Decimal("0.00"),
+    ) + sum((d.amount_off for d in order.discounts), Decimal("0.00"))
+    breakdown = calculate_totals(
+        _subtotal_from_items(order.items),
+        tip=order.tip_total,
+        discount_total=discount_total,
+        settings=settings,
+    )
+    _apply_breakdown(order, breakdown)
+    order.updated_at = now_utc()
+    session.add(order)
 
 
 def _check_and_deduct_stock(
@@ -526,16 +633,8 @@ def replace_items(
 
     session.flush()
     session.refresh(order)
-    # ── 4. Recompute totals from the new line set ───────────────────
-    breakdown = calculate_totals(
-        _subtotal_from_items(order.items),
-        tip=order.tip_total,
-        discount_total=order.discount_total,
-        settings=settings,
-    )
-    _apply_breakdown(order, breakdown)
-    order.updated_at = now_utc()
-    session.add(order)
+    # ── 4. Recompute totals (incl. discount snapshot rebuild) ───────
+    recompute_totals(session, order, settings)
     session.commit()
     session.refresh(order)
     return order
@@ -624,15 +723,7 @@ def void_item(
     item.kitchen_status = KitchenStatus.CANCELLED
     session.add(item)
 
-    breakdown = calculate_totals(
-        _subtotal_from_items(order.items),
-        tip=order.tip_total,
-        discount_total=order.discount_total,
-        settings=settings,
-    )
-    _apply_breakdown(order, breakdown)
-    order.updated_at = now
-    session.add(order)
+    recompute_totals(session, order, settings)
     session.commit()
     session.refresh(order)
     return order

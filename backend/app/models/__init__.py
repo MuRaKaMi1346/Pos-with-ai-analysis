@@ -1,5 +1,13 @@
 """Re-export every model + enum so consumers can ``from app.models import ...``."""
 
+from app.models.audit import AuditLog
+from app.models.discount import (
+    Discount,
+    DiscountScope,
+    DiscountType,
+    OrderDiscount,
+    OrderItemDiscount,
+)
 from app.models.ingredient import Ingredient, Unit
 from app.models.inventory import MovementType, StockLevel, StockMovement, Waste
 from app.models.order import (
@@ -22,7 +30,11 @@ from app.models.recipe import Recipe
 from app.models.user import Role, User
 
 __all__ = [
+    "AuditLog",
     "Category",
+    "Discount",
+    "DiscountScope",
+    "DiscountType",
     "Ingredient",
     "KitchenStatus",
     "Modifier",
@@ -30,7 +42,9 @@ __all__ = [
     "MovementType",
     "Order",
     "OrderChannel",
+    "OrderDiscount",
     "OrderItem",
+    "OrderItemDiscount",
     "OrderItemModifier",
     "OrderStatus",
     "Payment",

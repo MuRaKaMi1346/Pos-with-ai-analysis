@@ -14,6 +14,7 @@ from sqlmodel import Field, Relationship, SQLModel
 from app.utils.datetime import now_utc
 
 if TYPE_CHECKING:
+    from app.models.discount import OrderDiscount, OrderItemDiscount
     from app.models.payment import Payment
     from app.models.product import Modifier, Product
 
@@ -90,6 +91,7 @@ class Order(SQLModel, table=True):
 
     items: list["OrderItem"] = Relationship(back_populates="order")
     payments: list["Payment"] = Relationship(back_populates="order")
+    discounts: list["OrderDiscount"] = Relationship(back_populates="order")
 
 
 class OrderItem(SQLModel, table=True):
@@ -112,6 +114,7 @@ class OrderItem(SQLModel, table=True):
     order: Order = Relationship(back_populates="items")
     product: "Product" = Relationship(back_populates="order_items")
     modifiers: list["OrderItemModifier"] = Relationship(back_populates="order_item")
+    discounts: list["OrderItemDiscount"] = Relationship(back_populates="order_item")
 
 
 class OrderItemModifier(SQLModel, table=True):

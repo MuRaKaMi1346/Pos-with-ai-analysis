@@ -1,16 +1,18 @@
-"""Order endpoints — create + lifecycle (hold / resume / send / void)."""
+"""Order endpoints — create + lifecycle (hold / resume / send / void) + discounts (M4)."""
 
 from fastapi import APIRouter, status
 
 from app.core.dependencies import CurrentUserDep, DBSessionDep, SettingsDep
+from app.core.exceptions import NotFoundError
 from app.models import Order
+from app.schemas.discount import ApplyDiscountBody
 from app.schemas.order import (
     OrderCreate,
     OrderItemsReplace,
     OrderRead,
     VoidReasonBody,
 )
-from app.services import order_service
+from app.services import discount_service, order_service
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 
@@ -132,3 +134,92 @@ def void_bill(
         reason=data.reason,
         actor=current,
     )
+
+
+# ── M4: discount apply / remove ──────────────────────────────────────
+
+
+@router.post(
+    "/{order_id}/discounts",
+    response_model=OrderRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def apply_order_discount(
+    order_id: int,
+    data: ApplyDiscountBody,
+    session: DBSessionDep,
+    settings: SettingsDep,
+    current: CurrentUserDep,
+) -> Order:
+    """Apply an order-level discount (coded or ad-hoc). Admin if over threshold."""
+    order = order_service.get_or_404(session, order_id)
+    discount_service.apply_to_order(session, order, data, actor=current, settings=settings)
+    order_service.recompute_totals(session, order, settings)
+    session.commit()
+    session.refresh(order)
+    return order
+
+
+@router.delete("/{order_id}/discounts/{order_discount_id}", response_model=OrderRead)
+def remove_order_discount(
+    order_id: int,
+    order_discount_id: int,
+    session: DBSessionDep,
+    settings: SettingsDep,
+    current: CurrentUserDep,
+) -> Order:
+    """Remove a previously-applied order-level discount."""
+    order = order_service.get_or_404(session, order_id)
+    discount_service.remove_from_order(session, order, order_discount_id, actor=current)
+    order_service.recompute_totals(session, order, settings)
+    session.commit()
+    session.refresh(order)
+    return order
+
+
+@router.post(
+    "/{order_id}/items/{item_id}/discounts",
+    response_model=OrderRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def apply_item_discount(
+    order_id: int,
+    item_id: int,
+    data: ApplyDiscountBody,
+    session: DBSessionDep,
+    settings: SettingsDep,
+    current: CurrentUserDep,
+) -> Order:
+    """Apply a line-level discount."""
+    order = order_service.get_or_404(session, order_id)
+    item = next((i for i in order.items if i.id == item_id), None)
+    if item is None:
+        raise NotFoundError("order_item_not_found")
+    discount_service.apply_to_item(session, order, item, data, actor=current, settings=settings)
+    order_service.recompute_totals(session, order, settings)
+    session.commit()
+    session.refresh(order)
+    return order
+
+
+@router.delete(
+    "/{order_id}/items/{item_id}/discounts/{order_item_discount_id}",
+    response_model=OrderRead,
+)
+def remove_item_discount(
+    order_id: int,
+    item_id: int,
+    order_item_discount_id: int,
+    session: DBSessionDep,
+    settings: SettingsDep,
+    current: CurrentUserDep,
+) -> Order:
+    order = order_service.get_or_404(session, order_id)
+    item = next((i for i in order.items if i.id == item_id), None)
+    if item is None:
+        raise NotFoundError("order_item_not_found")
+    discount_service.remove_from_item(session, order, item, order_item_discount_id, actor=current)
+    order_service.recompute_totals(session, order, settings)
+    session.commit()
+    session.refresh(order)
+    return order

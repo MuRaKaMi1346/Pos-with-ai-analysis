@@ -12,6 +12,7 @@ from decimal import Decimal
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.order import KitchenStatus, OrderChannel, OrderStatus
+from app.schemas.discount import OrderDiscountRead, OrderItemDiscountRead
 
 
 class OrderItemCreate(BaseModel):
@@ -51,6 +52,7 @@ class OrderItemRead(BaseModel):
     is_voided: bool
     voided_reason: str | None
     modifiers: list[OrderItemModifierRead] = Field(default_factory=list)
+    discounts: list[OrderItemDiscountRead] = Field(default_factory=list)
 
 
 class OrderRead(BaseModel):
@@ -64,6 +66,7 @@ class OrderRead(BaseModel):
     user_id: int | None
     note: str | None
     items: list[OrderItemRead] = Field(default_factory=list)
+    discounts: list[OrderDiscountRead] = Field(default_factory=list)
 
     # ── Totals breakdown ────────────────────────────────────────────
     subtotal: Decimal

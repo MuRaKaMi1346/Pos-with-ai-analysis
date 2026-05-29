@@ -6,6 +6,7 @@ from app.api.v1 import (
     ai,
     auth,
     dashboard,
+    discounts,
     ingredients,
     inventory,
     modifier_groups,
@@ -22,5 +23,6 @@ api_router.include_router(modifier_groups.router)
 api_router.include_router(recipes.router)
 api_router.include_router(inventory.router)
 api_router.include_router(orders.router)
+api_router.include_router(discounts.router)
 api_router.include_router(dashboard.router)
 api_router.include_router(ai.router)
