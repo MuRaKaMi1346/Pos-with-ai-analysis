@@ -30,6 +30,7 @@ from app.models import (
     Category,
     Ingredient,
     Modifier,
+    ModifierGroup,
     Product,
     Recipe,
     Role,
@@ -191,9 +192,26 @@ def product_latte_fixture(
     return product
 
 
+@pytest.fixture(name="modifier_group_extras")
+def modifier_group_extras_fixture(session: Session) -> ModifierGroup:
+    group = ModifierGroup(name="extras", min_select=0, max_select=2, is_required=False)
+    session.add(group)
+    session.commit()
+    session.refresh(group)
+    return group
+
+
 @pytest.fixture(name="modifier_extra_shot")
-def modifier_extra_shot_fixture(session: Session) -> Modifier:
-    modifier = Modifier(name="Extra shot", price_delta=Decimal("10.00"), group="extras")
+def modifier_extra_shot_fixture(
+    session: Session,
+    modifier_group_extras: ModifierGroup,
+) -> Modifier:
+    assert modifier_group_extras.id is not None
+    modifier = Modifier(
+        name="Extra shot",
+        price_delta=Decimal("10.00"),
+        group_id=modifier_group_extras.id,
+    )
     session.add(modifier)
     session.commit()
     session.refresh(modifier)

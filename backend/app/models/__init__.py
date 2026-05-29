@@ -10,7 +10,13 @@ from app.models.order import (
     OrderStatus,
 )
 from app.models.payment import Payment, PaymentMethod
-from app.models.product import Category, Modifier, Product, ProductModifierLink
+from app.models.product import (
+    Category,
+    Modifier,
+    ModifierGroup,
+    Product,
+    ProductModifierLink,
+)
 from app.models.recipe import Recipe
 from app.models.user import Role, User
 
@@ -18,6 +24,7 @@ __all__ = [
     "Category",
     "Ingredient",
     "Modifier",
+    "ModifierGroup",
     "MovementType",
     "Order",
     "OrderChannel",

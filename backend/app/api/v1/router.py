@@ -8,6 +8,7 @@ from app.api.v1 import (
     dashboard,
     ingredients,
     inventory,
+    modifier_groups,
     orders,
     products,
     recipes,
@@ -17,6 +18,7 @@ api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(auth.router)
 api_router.include_router(products.router)
 api_router.include_router(ingredients.router)
+api_router.include_router(modifier_groups.router)
 api_router.include_router(recipes.router)
 api_router.include_router(inventory.router)
 api_router.include_router(orders.router)

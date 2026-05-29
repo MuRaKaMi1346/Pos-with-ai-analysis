@@ -1,8 +1,12 @@
-"""Category, Product, Modifier + Product↔Modifier link.
+"""Category, Product, Modifier, ModifierGroup + Product↔Modifier link.
 
 - Category is self-referential (sub-categories supported).
-- Modifier ↔ Product is many-to-many: e.g. "Sweetness" modifiers apply to all
-  coffees. The actual choice picked per sale lives in ``OrderItemModifier``.
+- ``ModifierGroup`` (M2) carries POS UX semantics — min/max selectable and
+  whether the group is required. Each ``Modifier`` belongs to exactly one
+  group; products link to individual modifiers (not whole groups) so an
+  espresso can offer a subset of the shared "Sweetness" choices.
+- Modifier ↔ Product stays many-to-many: the actual choice picked per sale
+  lives in ``OrderItemModifier``.
 """
 
 from datetime import datetime
@@ -59,18 +63,43 @@ class Product(SQLModel, table=True):
     order_items: list["OrderItem"] = Relationship(back_populates="product")
 
 
+class ModifierGroup(SQLModel, table=True):
+    """A logical set of modifiers (e.g. "Sweetness", "Milk", "Size").
+
+    - ``min_select`` / ``max_select`` drive the POS picker UX.
+      ``max_select=1`` renders as radio; ``>1`` as multi-checkbox.
+    - ``is_required`` forces a selection before the line can be added
+      to the cart.
+    - ``sort_order`` keeps groups in a deterministic order on screen.
+    """
+
+    __tablename__ = "modifier_groups"
+
+    id: int | None = Field(default=None, primary_key=True)
+    name: str = Field(unique=True, max_length=100)
+    min_select: int = Field(default=0, ge=0)
+    max_select: int = Field(default=1, ge=1)
+    is_required: bool = Field(default=False)
+    sort_order: int = Field(default=0)
+
+    modifiers: list["Modifier"] = Relationship(back_populates="group")
+
+
 class Modifier(SQLModel, table=True):
-    """Customer-selectable add-on / option. Grouped by ``group`` (e.g. "sweetness")."""
+    """Customer-selectable add-on / option (one of a ``ModifierGroup``)."""
 
     __tablename__ = "modifiers"
 
     id: int | None = Field(default=None, primary_key=True)
     name: str = Field(index=True, max_length=100)
     price_delta: Decimal = Field(default=Decimal("0.00"), max_digits=10, decimal_places=2)
-    group: str = Field(max_length=50, index=True)
+    group_id: int = Field(foreign_key="modifier_groups.id", index=True)
     is_active: bool = Field(default=True, index=True)
+    sort_order: int = Field(default=0)
 
+    group: ModifierGroup = Relationship(back_populates="modifiers")
     products: list[Product] = Relationship(
         back_populates="modifiers",
         link_model=ProductModifierLink,
     )
+    recipes: list["Recipe"] = Relationship(back_populates="modifier")

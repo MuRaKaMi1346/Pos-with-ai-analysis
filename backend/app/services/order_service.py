@@ -203,29 +203,15 @@ def create_order(
     """
     items_in = payload.items
 
-    # ── 1. Resolve products + compute ingredient requirements ────────
+    # ── 1. Resolve products ──────────────────────────────────────────
     products_by_id: dict[int, Product] = {}
-    requirements: dict[int, Decimal] = defaultdict(lambda: Decimal("0"))
-
     for item_in in items_in:
         product = session.get(Product, item_in.product_id)
         if product is None or not product.is_active:
             raise NotFoundError(f"product_not_found:{item_in.product_id}")
         products_by_id[product.id] = product  # type: ignore[index]
-        for recipe in product.recipes:
-            requirements[recipe.ingredient_id] += recipe.qty * item_in.qty
 
-    # ── 2. Stock availability check (no writes yet) ──────────────────
-    stocks_by_ingredient: dict[int, StockLevel] = {}
-    for ingredient_id, required in requirements.items():
-        stock = inventory_repo.get_stock(session, ingredient_id)
-        if stock is None or stock.quantity < required:
-            ingredient = session.get(Ingredient, ingredient_id)
-            name = ingredient.name if ingredient else f"ingredient:{ingredient_id}"
-            raise ConflictError(f"insufficient_stock:{name}")
-        stocks_by_ingredient[ingredient_id] = stock
-
-    # ── 3. Resolve modifiers (need price_delta snapshot) ─────────────
+    # ── 2. Resolve modifiers (need price_delta + recipes snapshot) ───
     modifiers_by_id: dict[int, Modifier] = {}
     for item_in in items_in:
         for mod_id in item_in.modifier_ids:
@@ -236,7 +222,31 @@ def create_order(
                 raise NotFoundError(f"modifier_not_found:{mod_id}")
             modifiers_by_id[mod_id] = modifier
 
-    # ── 4. Build subtotal up-front so we can populate the snapshot ──
+    # ── 3. Compute total ingredient requirements ─────────────────────
+    # Product recipes consume `recipe.qty * line.qty`. Modifier recipes
+    # also consume `recipe.qty * line.qty` — one modifier-line covers the
+    # whole multiplier (e.g. 3 lattes with extra-shot each = 3 extra shots).
+    requirements: dict[int, Decimal] = defaultdict(lambda: Decimal("0"))
+    for item_in in items_in:
+        product = products_by_id[item_in.product_id]
+        for recipe in product.recipes:
+            requirements[recipe.ingredient_id] += recipe.qty * item_in.qty
+        for mod_id in item_in.modifier_ids:
+            modifier = modifiers_by_id[mod_id]
+            for recipe in modifier.recipes:
+                requirements[recipe.ingredient_id] += recipe.qty * item_in.qty
+
+    # ── 4. Stock availability check (no writes yet) ──────────────────
+    stocks_by_ingredient: dict[int, StockLevel] = {}
+    for ingredient_id, required in requirements.items():
+        stock = inventory_repo.get_stock(session, ingredient_id)
+        if stock is None or stock.quantity < required:
+            ingredient = session.get(Ingredient, ingredient_id)
+            name = ingredient.name if ingredient else f"ingredient:{ingredient_id}"
+            raise ConflictError(f"insufficient_stock:{name}")
+        stocks_by_ingredient[ingredient_id] = stock
+
+    # ── 5. Build subtotal up-front so we can populate the snapshot ──
     subtotal = Decimal("0.00")
     for item_in in items_in:
         product = products_by_id[item_in.product_id]
@@ -247,7 +257,7 @@ def create_order(
 
     breakdown = calculate_totals(subtotal, tip=payload.tip, settings=settings)
 
-    # ── 5. Insert the Order with order_number — retry on UNIQUE race ─
+    # ── 6. Insert the Order with order_number — retry on UNIQUE race ─
     now = now_utc()
     order = _insert_order_with_number(
         session,
@@ -258,7 +268,7 @@ def create_order(
     )
     assert order.id is not None
 
-    # ── 6. Insert items + item modifiers ─────────────────────────────
+    # ── 7. Insert items + item modifiers ─────────────────────────────
     for item_in in items_in:
         product = products_by_id[item_in.product_id]
         item = OrderItem(
@@ -279,7 +289,7 @@ def create_order(
                 )
             )
 
-    # ── 7. Deduct stock + record sale movements ──────────────────────
+    # ── 8. Deduct stock + record sale movements ──────────────────────
     for ingredient_id, required in requirements.items():
         stock = stocks_by_ingredient[ingredient_id]
         stock.quantity = stock.quantity - required
@@ -295,7 +305,7 @@ def create_order(
             )
         )
 
-    # ── 8. Commit once at the end ────────────────────────────────────
+    # ── 9. Commit once at the end ────────────────────────────────────
     session.commit()
     session.refresh(order)
     return order
