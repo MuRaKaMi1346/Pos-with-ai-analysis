@@ -1,6 +1,9 @@
-"""Order endpoints — create + lifecycle (hold / resume / send / void) + discounts (M4)."""
+"""Order endpoints — create + lifecycle + discounts + pay (M5)."""
 
-from fastapi import APIRouter, status
+from typing import Any
+
+from fastapi import APIRouter, Header, status
+from fastapi.responses import JSONResponse
 
 from app.core.dependencies import CurrentUserDep, DBSessionDep, SettingsDep
 from app.core.exceptions import NotFoundError
@@ -12,7 +15,8 @@ from app.schemas.order import (
     OrderRead,
     VoidReasonBody,
 )
-from app.services import discount_service, order_service
+from app.schemas.payment import PayBody
+from app.services import discount_service, idempotency, order_service, payment_service
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 
@@ -23,15 +27,48 @@ def create_order(
     session: DBSessionDep,
     settings: SettingsDep,
     current: CurrentUserDep,
-) -> Order:
-    """Open a new bill. M3: no stock check / deduction — those happen at send-to-kitchen."""
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+) -> Any:
+    """Open a new bill. M3: no stock check / deduction — those happen at send-to-kitchen.
+
+    M5: honors ``Idempotency-Key`` — repeats with the same key + body replay
+    the cached response; same key + different body → 409 mismatch.
+    """
     assert current.id is not None
-    return order_service.create_order(
+    body = data.model_dump(mode="json")
+    if idempotency_key:
+        hit = idempotency.check(
+            session,
+            key=idempotency_key,
+            endpoint="create_order",
+            user_id=current.id,
+            request_body=body,
+        )
+        if hit is not None:
+            return JSONResponse(status_code=hit.status_code, content=hit.body)
+
+    order = order_service.create_order(
         session,
         user_id=current.id,
         payload=data,
         settings=settings,
     )
+
+    if idempotency_key:
+        response_body = OrderRead.model_validate(order, from_attributes=True).model_dump(
+            mode="json"
+        )
+        idempotency.record(
+            session,
+            key=idempotency_key,
+            endpoint="create_order",
+            user_id=current.id,
+            request_body=body,
+            response_status=status.HTTP_201_CREATED,
+            response_body=response_body,
+        )
+        session.commit()
+    return order
 
 
 @router.get("/", response_model=list[OrderRead])
@@ -134,6 +171,54 @@ def void_bill(
         reason=data.reason,
         actor=current,
     )
+
+
+# ── M5: pay (multi-tender + idempotency) ────────────────────────────
+
+
+@router.post("/{order_id}/pay", response_model=OrderRead)
+def pay_order(
+    order_id: int,
+    data: PayBody,
+    session: DBSessionDep,
+    current: CurrentUserDep,
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+) -> Any:
+    """Flip bill to PAID with the supplied tender mix.
+
+    Idempotency-Key replays the prior response on retry (same key + body)
+    or 409s on body mismatch. Pay is the high-stakes path for retries —
+    double-charge is the failure mode we're guarding.
+    """
+    assert current.id is not None
+    body = data.model_dump(mode="json")
+    if idempotency_key:
+        hit = idempotency.check(
+            session,
+            key=idempotency_key,
+            endpoint="pay_order",
+            user_id=current.id,
+            request_body={"order_id": order_id, **body},
+        )
+        if hit is not None:
+            return JSONResponse(status_code=hit.status_code, content=hit.body)
+
+    order = order_service.get_or_404(session, order_id)
+    paid = payment_service.pay_order(session, order, data.tenders)
+
+    if idempotency_key:
+        response_body = OrderRead.model_validate(paid, from_attributes=True).model_dump(mode="json")
+        idempotency.record(
+            session,
+            key=idempotency_key,
+            endpoint="pay_order",
+            user_id=current.id,
+            request_body={"order_id": order_id, **body},
+            response_status=status.HTTP_200_OK,
+            response_body=response_body,
+        )
+        session.commit()
+    return paid
 
 
 # ── M4: discount apply / remove ──────────────────────────────────────

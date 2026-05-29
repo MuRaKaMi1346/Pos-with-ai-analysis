@@ -13,6 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.order import KitchenStatus, OrderChannel, OrderStatus
 from app.schemas.discount import OrderDiscountRead, OrderItemDiscountRead
+from app.schemas.payment import PaymentRead
 
 
 class OrderItemCreate(BaseModel):
@@ -67,6 +68,7 @@ class OrderRead(BaseModel):
     note: str | None
     items: list[OrderItemRead] = Field(default_factory=list)
     discounts: list[OrderDiscountRead] = Field(default_factory=list)
+    payments: list[PaymentRead] = Field(default_factory=list)
 
     # ── Totals breakdown ────────────────────────────────────────────
     subtotal: Decimal
@@ -82,8 +84,9 @@ class OrderRead(BaseModel):
     paid_total: Decimal
     change_due: Decimal
 
-    # ── Lifecycle (M3) ──────────────────────────────────────────────
+    # ── Lifecycle (M3 + M5) ─────────────────────────────────────────
     sent_to_kitchen_at: datetime | None
+    closed_at: datetime | None
     voided_at: datetime | None
     voided_by_user_id: int | None
     void_reason: str | None

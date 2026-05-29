@@ -82,6 +82,8 @@ class Order(SQLModel, table=True):
     # blocked once this is set; per-line void with a reason is still
     # allowed (admin-only).
     sent_to_kitchen_at: datetime | None = Field(default=None)
+    # M5: when the bill flips to PAID. Stays null for HOLD / OPEN / VOIDED.
+    closed_at: datetime | None = Field(default=None)
     voided_at: datetime | None = Field(default=None)
     voided_by_user_id: int | None = Field(default=None, foreign_key="users.id")
     void_reason: str | None = Field(default=None, max_length=255)

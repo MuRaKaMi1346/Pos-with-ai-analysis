@@ -8,6 +8,7 @@ from app.models.discount import (
     OrderDiscount,
     OrderItemDiscount,
 )
+from app.models.idempotency import IdempotencyKey
 from app.models.ingredient import Ingredient, Unit
 from app.models.inventory import MovementType, StockLevel, StockMovement, Waste
 from app.models.order import (
@@ -35,6 +36,7 @@ __all__ = [
     "Discount",
     "DiscountScope",
     "DiscountType",
+    "IdempotencyKey",
     "Ingredient",
     "KitchenStatus",
     "Modifier",
