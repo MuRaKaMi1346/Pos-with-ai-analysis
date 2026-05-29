@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from app.models.discount import OrderDiscount, OrderItemDiscount
     from app.models.payment import Payment
     from app.models.product import Modifier, Product
+    from app.models.refund import Refund, RefundItem
 
 
 class OrderStatus(StrEnum):
@@ -24,7 +25,8 @@ class OrderStatus(StrEnum):
     HOLD = "hold"  # parked / saved-for-later (M3) — no stock held
     PAID = "paid"
     VOIDED = "voided"
-    REFUNDED = "refunded"
+    PARTIALLY_REFUNDED = "partially_refunded"  # M6 — some lines refunded
+    REFUNDED = "refunded"  # M6 — bill fully refunded
 
 
 class OrderChannel(StrEnum):
@@ -94,6 +96,7 @@ class Order(SQLModel, table=True):
     items: list["OrderItem"] = Relationship(back_populates="order")
     payments: list["Payment"] = Relationship(back_populates="order")
     discounts: list["OrderDiscount"] = Relationship(back_populates="order")
+    refunds: list["Refund"] = Relationship(back_populates="order")
 
 
 class OrderItem(SQLModel, table=True):
@@ -117,6 +120,7 @@ class OrderItem(SQLModel, table=True):
     product: "Product" = Relationship(back_populates="order_items")
     modifiers: list["OrderItemModifier"] = Relationship(back_populates="order_item")
     discounts: list["OrderItemDiscount"] = Relationship(back_populates="order_item")
+    refund_items: list["RefundItem"] = Relationship(back_populates="order_item")
 
 
 class OrderItemModifier(SQLModel, table=True):

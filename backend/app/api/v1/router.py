@@ -13,6 +13,7 @@ from app.api.v1 import (
     orders,
     products,
     recipes,
+    refunds,
 )
 
 api_router = APIRouter(prefix="/api/v1")
@@ -23,6 +24,7 @@ api_router.include_router(modifier_groups.router)
 api_router.include_router(recipes.router)
 api_router.include_router(inventory.router)
 api_router.include_router(orders.router)
+api_router.include_router(refunds.router)
 api_router.include_router(discounts.router)
 api_router.include_router(dashboard.router)
 api_router.include_router(ai.router)

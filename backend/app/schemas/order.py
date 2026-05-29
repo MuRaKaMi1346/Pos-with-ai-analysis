@@ -14,6 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.models.order import KitchenStatus, OrderChannel, OrderStatus
 from app.schemas.discount import OrderDiscountRead, OrderItemDiscountRead
 from app.schemas.payment import PaymentRead
+from app.schemas.refund import RefundRead
 
 
 class OrderItemCreate(BaseModel):
@@ -69,6 +70,7 @@ class OrderRead(BaseModel):
     items: list[OrderItemRead] = Field(default_factory=list)
     discounts: list[OrderDiscountRead] = Field(default_factory=list)
     payments: list[PaymentRead] = Field(default_factory=list)
+    refunds: list[RefundRead] = Field(default_factory=list)
 
     # ── Totals breakdown ────────────────────────────────────────────
     subtotal: Decimal

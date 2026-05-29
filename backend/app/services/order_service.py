@@ -185,17 +185,22 @@ def list_recent(
 # ── Recipe walking helpers ──────────────────────────────────────────
 
 
-def _line_requirements(item: OrderItem) -> dict[int, Decimal]:
-    """How much of each ingredient one OrderItem (including its modifiers) consumes."""
+def _line_requirements(item: OrderItem, *, qty: int | None = None) -> dict[int, Decimal]:
+    """How much of each ingredient ``qty`` units of an OrderItem consume.
+
+    ``qty=None`` (default) uses the full ``item.qty`` — that's the original
+    send-to-kitchen / void-line callers. M6 refund passes a partial qty.
+    """
+    effective_qty = qty if qty is not None else item.qty
     reqs: dict[int, Decimal] = defaultdict(lambda: Decimal("0"))
     if item.product is not None:
         for recipe in item.product.recipes:
-            reqs[recipe.ingredient_id] += recipe.qty * item.qty
+            reqs[recipe.ingredient_id] += recipe.qty * effective_qty
     for oim in item.modifiers:
         if oim.modifier is None:
             continue
         for recipe in oim.modifier.recipes:
-            reqs[recipe.ingredient_id] += recipe.qty * item.qty
+            reqs[recipe.ingredient_id] += recipe.qty * effective_qty
     return reqs
 
 

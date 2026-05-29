@@ -28,6 +28,7 @@ from app.models.product import (
     ProductModifierLink,
 )
 from app.models.recipe import Recipe
+from app.models.refund import Refund, RefundItem
 from app.models.user import Role, User
 
 __all__ = [
@@ -54,6 +55,8 @@ __all__ = [
     "Product",
     "ProductModifierLink",
     "Recipe",
+    "Refund",
+    "RefundItem",
     "Role",
     "StockLevel",
     "StockMovement",
