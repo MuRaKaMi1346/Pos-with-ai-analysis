@@ -55,6 +55,7 @@ class OrderItemRead(BaseModel):
     kitchen_status: KitchenStatus
     is_voided: bool
     voided_reason: str | None
+    kds_ticket_id: int | None
     modifiers: list[OrderItemModifierRead] = Field(default_factory=list)
     discounts: list[OrderItemDiscountRead] = Field(default_factory=list)
 

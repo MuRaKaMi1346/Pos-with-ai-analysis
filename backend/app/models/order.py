@@ -16,6 +16,7 @@ from app.utils.datetime import now_utc
 if TYPE_CHECKING:
     from app.models.customer import Customer
     from app.models.discount import OrderDiscount, OrderItemDiscount
+    from app.models.kds import KdsTicket
     from app.models.payment import Payment
     from app.models.product import Modifier, Product
     from app.models.refund import Refund, RefundItem
@@ -121,12 +122,15 @@ class OrderItem(SQLModel, table=True):
     kitchen_status: KitchenStatus = Field(default=KitchenStatus.PENDING, index=True)
     is_voided: bool = Field(default=False, index=True)
     voided_reason: str | None = Field(default=None, max_length=255)
+    # M9: which station ticket this line is routed to (set at send-to-kitchen).
+    kds_ticket_id: int | None = Field(default=None, foreign_key="kds_tickets.id", index=True)
 
     order: Order = Relationship(back_populates="items")
     product: "Product" = Relationship(back_populates="order_items")
     modifiers: list["OrderItemModifier"] = Relationship(back_populates="order_item")
     discounts: list["OrderItemDiscount"] = Relationship(back_populates="order_item")
     refund_items: list["RefundItem"] = Relationship(back_populates="order_item")
+    kds_ticket: Optional["KdsTicket"] = Relationship(back_populates="items")
 
 
 class OrderItemModifier(SQLModel, table=True):

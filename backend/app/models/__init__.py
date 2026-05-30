@@ -12,6 +12,7 @@ from app.models.discount import (
 from app.models.idempotency import IdempotencyKey
 from app.models.ingredient import Ingredient, Unit
 from app.models.inventory import MovementType, StockLevel, StockMovement, Waste
+from app.models.kds import KdsStatus, KdsTicket, Station
 from app.models.order import (
     KitchenStatus,
     Order,
@@ -45,6 +46,8 @@ __all__ = [
     "DiscountType",
     "IdempotencyKey",
     "Ingredient",
+    "KdsStatus",
+    "KdsTicket",
     "KitchenStatus",
     "Modifier",
     "ModifierGroup",
@@ -64,6 +67,7 @@ __all__ = [
     "Refund",
     "RefundItem",
     "Role",
+    "Station",
     "StockLevel",
     "StockMovement",
     "Unit",

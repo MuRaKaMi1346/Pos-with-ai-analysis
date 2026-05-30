@@ -49,7 +49,7 @@ from app.models import (
 )
 from app.repositories import inventory_repo, order_repo
 from app.schemas.order import OrderCreate, OrderItemsReplace
-from app.services import shift_service
+from app.services import kds_service, shift_service
 from app.utils.datetime import now_utc
 
 _TWO_DP = Decimal("0.01")
@@ -739,6 +739,8 @@ def send_to_kitchen(session: Session, order: Order, *, user_id: int) -> Order:
         item.kitchen_status = KitchenStatus.PREPARING
         session.add(item)
     session.add(order)
+    # M9: route the just-sent lines to per-station KDS tickets.
+    kds_service.create_tickets_for_order(session, order, now=now)
     session.commit()
     session.refresh(order)
     return order

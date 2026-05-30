@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 
 from sqlmodel import Field, Relationship, SQLModel
 
+from app.models.kds import Station
 from app.utils.datetime import now_utc
 
 if TYPE_CHECKING:
@@ -37,6 +38,8 @@ class Category(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     name: str = Field(index=True, max_length=100)
     parent_id: int | None = Field(default=None, foreign_key="categories.id")
+    # M9: which KDS station this category's items are routed to at send-to-kitchen.
+    default_station: Station = Field(default=Station.BAR)
 
     products: list["Product"] = Relationship(back_populates="category")
 

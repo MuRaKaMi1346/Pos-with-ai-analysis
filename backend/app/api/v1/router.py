@@ -11,6 +11,7 @@ from app.api.v1 import (
     discounts,
     ingredients,
     inventory,
+    kds,
     modifier_groups,
     orders,
     products,
@@ -32,5 +33,6 @@ api_router.include_router(discounts.router)
 api_router.include_router(customers.router)
 api_router.include_router(shifts.router)
 api_router.include_router(cash_drawer.router)
+api_router.include_router(kds.router)
 api_router.include_router(dashboard.router)
 api_router.include_router(ai.router)
