@@ -30,12 +30,14 @@ from sqlmodel import Session
 from app.core.config import Settings
 from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError
 from app.models import (
+    Customer,
     DiscountType,
     Ingredient,
     KitchenStatus,
     Modifier,
     MovementType,
     Order,
+    OrderDiscount,
     OrderItem,
     OrderItemModifier,
     OrderStatus,
@@ -466,6 +468,17 @@ def create_order(
                 )
             )
 
+    # M7: attach a customer (if any) + auto-apply a parked loyalty redemption.
+    if payload.customer_id is not None:
+        _attach_customer_and_apply_redemption(
+            session,
+            order,
+            customer_id=payload.customer_id,
+            user_id=user_id,
+            settings=settings,
+            now=now,
+        )
+
     session.commit()
     session.refresh(order)
     return order
@@ -510,6 +523,52 @@ def _insert_order_with_number(
             continue
         return order
     raise ConflictError("order_number_collision") from last_err
+
+
+def _attach_customer_and_apply_redemption(
+    session: Session,
+    order: Order,
+    *,
+    customer_id: int,
+    user_id: int,
+    settings: Settings,
+    now: datetime,
+) -> None:
+    """Attach ``customer_id`` to a fresh bill and consume any pending loyalty
+    redemption as a ``POINTS`` order-discount.
+
+    Points are already debited at redeem time (``customer_service``); here we
+    only snapshot the parked baht onto the bill and zero the pending field —
+    a one-way hand-off so the discount can't be double-applied.
+    """
+    customer = session.get(Customer, customer_id)
+    if customer is None or not customer.is_active:
+        raise NotFoundError(f"customer_not_found:{customer_id}")
+    assert order.id is not None
+    order.customer_id = customer.id
+    session.add(order)
+
+    if customer.pending_redemption_baht <= 0:
+        session.flush()
+        return
+
+    session.add(
+        OrderDiscount(
+            order_id=order.id,
+            discount_id=None,
+            name="Loyalty points redemption",
+            type=DiscountType.POINTS,
+            value=customer.pending_redemption_baht,
+            applied_by_user_id=user_id,
+            reason="loyalty_redeem",
+        )
+    )
+    customer.pending_redemption_baht = Decimal("0.00")
+    customer.updated_at = now
+    session.add(customer)
+    session.flush()
+    session.refresh(order)
+    recompute_totals(session, order, settings)
 
 
 # ── Lifecycle: hold / resume ────────────────────────────────────────

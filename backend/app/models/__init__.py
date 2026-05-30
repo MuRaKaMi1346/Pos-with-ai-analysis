@@ -1,6 +1,7 @@
 """Re-export every model + enum so consumers can ``from app.models import ...``."""
 
 from app.models.audit import AuditLog
+from app.models.customer import Customer
 from app.models.discount import (
     Discount,
     DiscountScope,
@@ -34,6 +35,7 @@ from app.models.user import Role, User
 __all__ = [
     "AuditLog",
     "Category",
+    "Customer",
     "Discount",
     "DiscountScope",
     "DiscountType",

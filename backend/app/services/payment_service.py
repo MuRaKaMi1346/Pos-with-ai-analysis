@@ -22,6 +22,7 @@ from decimal import Decimal
 
 from sqlmodel import Session
 
+from app.core.config import Settings
 from app.core.exceptions import ConflictError, ValidationError
 from app.models import (
     Order,
@@ -30,6 +31,7 @@ from app.models import (
     PaymentMethod,
 )
 from app.schemas.payment import TenderItem
+from app.services import customer_service
 from app.utils.datetime import now_utc
 
 _TWO_DP = Decimal("0.01")
@@ -41,8 +43,14 @@ def pay_order(
     session: Session,
     order: Order,
     tenders: list[TenderItem],
+    *,
+    settings: Settings,
 ) -> Order:
-    """Flip ``order`` to PAID with the supplied tender mix. Atomic."""
+    """Flip ``order`` to PAID with the supplied tender mix. Atomic.
+
+    M7: on success, awards loyalty points to the attached customer (if any)
+    within the same transaction.
+    """
     if order.status != OrderStatus.OPEN:
         raise ConflictError(f"cannot_pay_status:{order.status}")
     if order.voided_at is not None:
@@ -96,6 +104,10 @@ def pay_order(
     order.change_due = change_due
     order.updated_at = now
     session.add(order)
+
+    # ── 5. Award loyalty points (no-op for walk-ins) ────────────────
+    customer_service.earn_for_order(session, order, settings=settings)
+
     session.commit()
     session.refresh(order)
     return order

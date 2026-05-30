@@ -7,13 +7,14 @@ concrete modifier the customer chose (with frozen price_delta from sale time).
 from datetime import datetime
 from decimal import Decimal
 from enum import StrEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from sqlmodel import Field, Relationship, SQLModel
 
 from app.utils.datetime import now_utc
 
 if TYPE_CHECKING:
+    from app.models.customer import Customer
     from app.models.discount import OrderDiscount, OrderItemDiscount
     from app.models.payment import Payment
     from app.models.product import Modifier, Product
@@ -58,6 +59,8 @@ class Order(SQLModel, table=True):
 
     status: OrderStatus = Field(default=OrderStatus.OPEN, index=True)
     user_id: int | None = Field(default=None, foreign_key="users.id", index=True)
+    # M7: optional customer attached to the bill — null for walk-ins.
+    customer_id: int | None = Field(default=None, foreign_key="customers.id", index=True)
     note: str | None = Field(default=None, max_length=255)
 
     # ── Totals breakdown (snapshot at sale time) ────────────────────
@@ -93,6 +96,7 @@ class Order(SQLModel, table=True):
     created_at: datetime = Field(default_factory=now_utc, index=True, nullable=False)
     updated_at: datetime = Field(default_factory=now_utc, nullable=False)
 
+    customer: Optional["Customer"] = Relationship(back_populates="orders")
     items: list["OrderItem"] = Relationship(back_populates="order")
     payments: list["Payment"] = Relationship(back_populates="order")
     discounts: list["OrderDiscount"] = Relationship(back_populates="order")

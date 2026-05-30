@@ -30,6 +30,8 @@ class OrderCreate(BaseModel):
     note: str | None = Field(default=None, max_length=255)
     # Optional tip the cashier collected — flows straight into tip_total.
     tip: Decimal = Field(default=Decimal("0.00"), ge=0, max_digits=12, decimal_places=2)
+    # M7: optional customer attached at create time.
+    customer_id: int | None = None
 
 
 # ── Read (nested) ────────────────────────────────────────────────────
@@ -66,6 +68,7 @@ class OrderRead(BaseModel):
     table_number: str | None
     status: OrderStatus
     user_id: int | None
+    customer_id: int | None
     note: str | None
     items: list[OrderItemRead] = Field(default_factory=list)
     discounts: list[OrderDiscountRead] = Field(default_factory=list)

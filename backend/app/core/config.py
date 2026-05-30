@@ -59,6 +59,12 @@ class Settings(BaseSettings):
     pos_discount_admin_threshold_pct: Decimal = Decimal("0.20")  # 20%
     pos_discount_admin_threshold_amount: Decimal = Decimal("100.00")
 
+    # ── POS loyalty (M7) ────────────────────────────────────────────
+    # Earn: floor(bill total / N) points per paid bill. Redeem: 1 point
+    # converts to M baht of discount, parked for the customer's next bill.
+    pos_loyalty_baht_per_earn_point: Decimal = Decimal("20")  # ฿20 spent → 1 pt
+    pos_loyalty_baht_per_redeem_point: Decimal = Decimal("0.10")  # 1 pt → ฿0.10
+
     # ── AI / Ollama ────────────────────────────────────────────────
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "llama3.1:8b"

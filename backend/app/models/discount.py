@@ -35,6 +35,7 @@ class DiscountScope(StrEnum):
 class DiscountType(StrEnum):
     PERCENT = "percent"  # value stored as 0.10 for 10%
     AMOUNT = "amount"  # value stored as raw THB
+    POINTS = "points"  # M7 loyalty redemption — value is the baht amount
 
 
 class Discount(SQLModel, table=True):
