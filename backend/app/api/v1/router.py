@@ -4,6 +4,7 @@ from fastapi import APIRouter
 
 from app.api.v1 import (
     ai,
+    audit,
     auth,
     cash_drawer,
     customers,
@@ -17,6 +18,7 @@ from app.api.v1 import (
     products,
     recipes,
     refunds,
+    settings,
     shifts,
 )
 
@@ -34,5 +36,7 @@ api_router.include_router(customers.router)
 api_router.include_router(shifts.router)
 api_router.include_router(cash_drawer.router)
 api_router.include_router(kds.router)
+api_router.include_router(settings.router)
+api_router.include_router(audit.router)
 api_router.include_router(dashboard.router)
 api_router.include_router(ai.router)

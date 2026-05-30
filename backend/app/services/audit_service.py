@@ -7,11 +7,13 @@ an orphan audit row.
 """
 
 import json
+from collections.abc import Sequence
 from typing import Any
 
 from sqlmodel import Session
 
 from app.models import AuditLog, User
+from app.repositories import audit_repo
 
 
 def _default(value: object) -> object:
@@ -40,3 +42,25 @@ def record(
     )
     session.add(row)
     return row
+
+
+def list_logs(
+    session: Session,
+    *,
+    action: str | None = None,
+    entity_type: str | None = None,
+    entity_id: int | None = None,
+    user_id: int | None = None,
+    offset: int = 0,
+    limit: int = 100,
+) -> Sequence[AuditLog]:
+    """Most-recent-first audit trail (admin read)."""
+    return audit_repo.list_filtered(
+        session,
+        action=action,
+        entity_type=entity_type,
+        entity_id=entity_id,
+        user_id=user_id,
+        offset=offset,
+        limit=limit,
+    )

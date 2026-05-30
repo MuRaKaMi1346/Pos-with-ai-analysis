@@ -74,6 +74,17 @@ def client_fixture(session: Session) -> Generator[TestClient, None, None]:
     app.dependency_overrides.clear()
 
 
+@pytest.fixture(autouse=True)
+def _reset_settings_cache() -> Generator[None, None, None]:
+    """Settings effective-cache is process-global; reset around each test so
+    the per-test in-memory DBs stay isolated."""
+    from app.services import settings_service
+
+    settings_service.clear_cache()
+    yield
+    settings_service.clear_cache()
+
+
 # ── User fixtures ────────────────────────────────────────────────────
 
 
