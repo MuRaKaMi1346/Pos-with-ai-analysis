@@ -11,6 +11,7 @@ import {
 } from '@/features/pos/api/products'
 import { Cart } from '@/features/pos/components/Cart'
 import { CategoryRail } from '@/features/pos/components/CategoryRail'
+import { CustomerSearchDialog } from '@/features/pos/components/CustomerSearchDialog'
 import { HeldTicketsDrawer } from '@/features/pos/components/HeldTicketsDrawer'
 import { MenuPanel } from '@/features/pos/components/MenuPanel'
 import { ModifierDialog } from '@/features/pos/components/ModifierDialog'
@@ -37,6 +38,9 @@ export function PosPage() {
   const setTableNumber = useCartStore((s) => s.setTableNumber)
   const addLine = useCartStore((s) => s.addLine)
   const loadOrder = useCartStore((s) => s.loadOrder)
+  const customer = useCartStore((s) => s.customer)
+  const setCustomer = useCartStore((s) => s.setCustomer)
+  const [customerOpen, setCustomerOpen] = useState(false)
 
   // Products with options open the modifier picker; the rest drop straight in.
   const [modifierTarget, setModifierTarget] = useState<Product | null>(null)
@@ -118,6 +122,10 @@ export function PosPage() {
         onOpenHeld={() => {
           setHeldOpen(true)
         }}
+        customer={customer}
+        onOpenCustomer={() => {
+          setCustomerOpen(true)
+        }}
       />
       <div className="flex min-h-0 flex-1">
         <CategoryRail
@@ -159,6 +167,13 @@ export function PosPage() {
         isPending={heldPending}
         resumingId={resumingId}
         onResume={handleResume}
+      />
+
+      <CustomerSearchDialog
+        open={customerOpen}
+        onOpenChange={setCustomerOpen}
+        customer={customer}
+        onAttach={setCustomer}
       />
     </div>
   )

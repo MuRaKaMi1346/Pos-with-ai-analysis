@@ -52,7 +52,7 @@ const payMutate = vi.fn()
 const holdMutate = vi.fn()
 
 beforeEach(() => {
-  useCartStore.setState({ lines: [], channel: 'takeaway', tableNumber: '' })
+  useCartStore.setState({ lines: [], channel: 'takeaway', tableNumber: '', customer: null })
   createMutate.mockReset()
   payMutate.mockReset()
   holdMutate.mockReset()
@@ -119,6 +119,7 @@ describe('Cart', () => {
       items: [{ product_id: 1, qty: 1, modifier_ids: [] }],
       channel: 'dine_in',
       table_number: 'A3',
+      customer_id: null,
     })
     const payArg = payMutate.mock.calls[0]?.[0] as {
       orderId: number

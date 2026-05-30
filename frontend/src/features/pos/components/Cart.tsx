@@ -25,6 +25,7 @@ export function Cart() {
   const lines = useCartStore((s) => s.lines)
   const channel = useCartStore((s) => s.channel)
   const tableNumber = useCartStore((s) => s.tableNumber)
+  const customer = useCartStore((s) => s.customer)
   const updateLine = useCartStore((s) => s.updateLine)
   const clear = useCartStore((s) => s.clear)
 
@@ -57,6 +58,7 @@ export function Cart() {
       })),
       channel,
       table_number: channel === 'dine_in' ? tableNumber.trim() || null : null,
+      customer_id: customer?.id ?? null,
     }
   }
 

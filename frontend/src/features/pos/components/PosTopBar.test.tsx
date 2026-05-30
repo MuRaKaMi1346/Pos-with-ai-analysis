@@ -3,11 +3,13 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
 import { PosTopBar } from '@/features/pos/components/PosTopBar'
+import type { Customer } from '@/types/customer'
 
 function setup(over: Partial<Parameters<typeof PosTopBar>[0]> = {}) {
   const onChannelChange = vi.fn()
   const onTableChange = vi.fn()
   const onOpenHeld = vi.fn()
+  const onOpenCustomer = vi.fn()
   render(
     <PosTopBar
       orderNumber={null}
@@ -17,10 +19,12 @@ function setup(over: Partial<Parameters<typeof PosTopBar>[0]> = {}) {
       onTableChange={onTableChange}
       heldCount={0}
       onOpenHeld={onOpenHeld}
+      customer={null}
+      onOpenCustomer={onOpenCustomer}
       {...over}
     />,
   )
-  return { onChannelChange, onTableChange, onOpenHeld }
+  return { onChannelChange, onTableChange, onOpenHeld, onOpenCustomer }
 }
 
 describe('PosTopBar', () => {
@@ -67,5 +71,26 @@ describe('PosTopBar', () => {
     const { onOpenHeld } = setup()
     await userEvent.click(screen.getByRole('button', { name: /พักบิล/ }))
     expect(onOpenHeld).toHaveBeenCalled()
+  })
+
+  it('shows Walk-in and opens the customer dialog when tapped', async () => {
+    const { onOpenCustomer } = setup()
+    expect(screen.getByText('Walk-in')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /Walk-in/ }))
+    expect(onOpenCustomer).toHaveBeenCalled()
+  })
+
+  it('shows the attached customer name + points', () => {
+    const ann: Customer = {
+      id: 1,
+      code: 'C1',
+      name: 'Ann',
+      phone: null,
+      loyalty_points: 120,
+      pending_redemption_baht: '0.00',
+    }
+    setup({ customer: ann })
+    expect(screen.getByText('Ann')).toBeInTheDocument()
+    expect(screen.getByText(/120/)).toBeInTheDocument()
   })
 })

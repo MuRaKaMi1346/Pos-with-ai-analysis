@@ -16,6 +16,7 @@ export interface OrderCreate {
   items: OrderItemIn[]
   channel?: OrderChannel
   table_number?: string | null
+  customer_id?: number | null
   note?: string | null
 }
 

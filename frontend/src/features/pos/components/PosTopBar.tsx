@@ -1,6 +1,7 @@
 import { Clock, Hash, User } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
+import type { Customer } from '@/types/customer'
 import type { OrderChannel } from '@/types/order'
 
 const CHANNELS: { value: OrderChannel; label: string }[] = [
@@ -18,6 +19,9 @@ interface PosTopBarProps {
   /** Held-tickets badge count + drawer opener (M15). */
   heldCount: number
   onOpenHeld: () => void
+  /** Attached customer (null = walk-in) + opener (M15). */
+  customer: Customer | null
+  onOpenCustomer: () => void
 }
 
 /** Dark "command bar" sub-bar for the POS route (spec §5.13). */
@@ -29,6 +33,8 @@ export function PosTopBar({
   onTableChange,
   heldCount,
   onOpenHeld,
+  customer,
+  onOpenCustomer,
 }: PosTopBarProps) {
   return (
     <div className="flex shrink-0 items-center gap-4 border-b border-stone-800 bg-stone-900 px-4 py-2.5 text-stone-100">
@@ -83,11 +89,19 @@ export function PosTopBar({
       <div className="ml-auto flex items-center gap-2">
         <button
           type="button"
-          disabled
-          title="แนบลูกค้า (เร็ว ๆ นี้ — M15)"
-          className="flex items-center gap-2 rounded-lg border border-stone-700 px-3 py-1.5 text-sm text-stone-400"
+          onClick={onOpenCustomer}
+          title="แนบลูกค้า"
+          className="flex items-center gap-2 rounded-lg border border-stone-700 px-3 py-1.5 text-sm text-stone-200 transition-colors hover:bg-stone-800"
         >
-          <User className="h-4 w-4" /> Walk-in
+          <User className="h-4 w-4" />
+          {customer ? (
+            <span className="flex items-center gap-1">
+              <span className="max-w-[10rem] truncate">{customer.name}</span>
+              <span className="text-amber-400">⭐ {customer.loyalty_points}</span>
+            </span>
+          ) : (
+            'Walk-in'
+          )}
         </button>
         <button
           type="button"

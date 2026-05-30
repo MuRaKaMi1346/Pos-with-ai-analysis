@@ -7,6 +7,7 @@ import {
   useCartStore,
   type SelectedModifier,
 } from '@/features/pos/stores/cartStore'
+import type { Customer } from '@/types/customer'
 import type { Product } from '@/types/product'
 
 const latte: Product = {
@@ -34,7 +35,7 @@ function firstUid(): string {
 }
 
 beforeEach(() => {
-  useCartStore.setState({ lines: [], channel: 'takeaway', tableNumber: '' })
+  useCartStore.setState({ lines: [], channel: 'takeaway', tableNumber: '', customer: null })
 })
 
 describe('cartStore (ticket)', () => {
@@ -137,5 +138,20 @@ describe('cartStore (ticket)', () => {
     expect(typeof s.lines[0]?.uid).toBe('string')
     expect(s.channel).toBe('dine_in')
     expect(s.tableNumber).toBe('B2')
+  })
+
+  it('setCustomer attaches a customer; clear resets it to walk-in', () => {
+    const ann: Customer = {
+      id: 5,
+      code: 'C5',
+      name: 'Ann',
+      phone: null,
+      loyalty_points: 10,
+      pending_redemption_baht: '0.00',
+    }
+    useCartStore.getState().setCustomer(ann)
+    expect(useCartStore.getState().customer).toEqual(ann)
+    useCartStore.getState().clear()
+    expect(useCartStore.getState().customer).toBeNull()
   })
 })

@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
+import type { Customer } from '@/types/customer'
 import type { OrderChannel } from '@/types/order'
 import type { Product } from '@/types/product'
 
@@ -30,6 +31,8 @@ interface TicketState {
   /** Sub-bar selection — sticky across sales. */
   channel: OrderChannel
   tableNumber: string
+  /** Attached customer for loyalty + history (M15); null = walk-in. */
+  customer: Customer | null
   addLine: (product: Product, modifiers?: SelectedModifier[], note?: string) => void
   incLine: (uid: string) => void
   decLine: (uid: string) => void
@@ -38,7 +41,8 @@ interface TicketState {
   removeLine: (uid: string) => void
   setChannel: (channel: OrderChannel) => void
   setTableNumber: (tableNumber: string) => void
-  /** Reset the ticket after a sale: drop lines + table, keep the channel. */
+  setCustomer: (customer: Customer | null) => void
+  /** Reset the ticket after a sale: drop lines + table + customer, keep channel. */
   clear: () => void
   /** Replace the whole ticket from a resumed held order (fresh line uids). */
   loadOrder: (payload: {
@@ -75,6 +79,7 @@ export const useCartStore = create<TicketState>()(
       lines: [],
       channel: 'takeaway',
       tableNumber: '',
+      customer: null,
       addLine: (product, modifiers = [], note) => {
         set((state) => {
           const cleanNote = normNote(note)
@@ -138,14 +143,18 @@ export const useCartStore = create<TicketState>()(
       setTableNumber: (tableNumber) => {
         set({ tableNumber })
       },
+      setCustomer: (customer) => {
+        set({ customer })
+      },
       clear: () => {
-        set({ lines: [], tableNumber: '' })
+        set({ lines: [], tableNumber: '', customer: null })
       },
       loadOrder: (payload) => {
         set({
           lines: payload.lines.map((l) => ({ ...l, uid: newUid() })),
           channel: payload.channel,
           tableNumber: payload.tableNumber,
+          customer: null,
         })
       },
     }),
@@ -157,6 +166,7 @@ export const useCartStore = create<TicketState>()(
         lines: state.lines,
         channel: state.channel,
         tableNumber: state.tableNumber,
+        customer: state.customer,
       }),
       migrate: (persisted, version) => {
         const prev = (persisted ?? {}) as Partial<TicketState>
