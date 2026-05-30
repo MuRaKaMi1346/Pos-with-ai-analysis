@@ -14,6 +14,7 @@ function makeProduct(id: number, name: string): Product {
     cost: '10.00',
     image: null,
     is_active: true,
+    has_modifiers: false,
     created_at: '',
     updated_at: '',
   }

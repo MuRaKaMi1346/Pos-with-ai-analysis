@@ -65,6 +65,12 @@ class Product(SQLModel, table=True):
     recipes: list["Recipe"] = Relationship(back_populates="product")
     order_items: list["OrderItem"] = Relationship(back_populates="product")
 
+    @property
+    def has_modifiers(self) -> bool:
+        """Any active modifier linked to this product — lets the POS card show a
+        customise dot and decide whether tapping opens the modifier picker (M13)."""
+        return any(m.is_active for m in self.modifiers)
+
 
 class ModifierGroup(SQLModel, table=True):
     """A logical set of modifiers (e.g. "Sweetness", "Milk", "Size").

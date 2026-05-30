@@ -10,6 +10,7 @@ function makeProduct(over: Partial<Product> & Pick<Product, 'id' | 'name'>): Pro
     cost: '10.00',
     image: null,
     is_active: true,
+    has_modifiers: false,
     created_at: '',
     updated_at: '',
     ...over,

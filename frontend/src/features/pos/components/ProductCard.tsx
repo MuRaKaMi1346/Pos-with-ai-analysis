@@ -28,6 +28,15 @@ export function ProductCard({
           </div>
         )}
       </div>
+      {product.has_modifiers && (
+        <span
+          className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-white/90 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 shadow-sm"
+          title="มีตัวเลือกเพิ่มเติม"
+        >
+          <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+          ตัวเลือก
+        </span>
+      )}
       <div className="flex flex-1 flex-col gap-1 p-3">
         <h3 className="line-clamp-2 text-sm font-medium leading-snug text-stone-800">
           {product.name}

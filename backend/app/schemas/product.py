@@ -52,5 +52,8 @@ class ProductRead(BaseModel):
     cost: Decimal
     image: str | None
     is_active: bool
+    # M13: true when the product has at least one active modifier — the POS
+    # uses it to show a customise dot and open the modifier picker on tap.
+    has_modifiers: bool
     created_at: datetime
     updated_at: datetime

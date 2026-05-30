@@ -1,34 +1,50 @@
-import { Receipt, ShoppingCart } from 'lucide-react'
-import { useMemo } from 'react'
+import { ShoppingCart } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { useCreateOrder } from '@/features/pos/api/products'
-import { CartItem } from '@/features/pos/components/CartItem'
-import { cartLineList, cartTotal, useCartStore } from '@/features/pos/stores/cartStore'
-import { formatCurrency } from '@/lib/utils'
+import { useSettings } from '@/features/pos/api/settings'
+import { CartLineSheet } from '@/features/pos/components/CartLineSheet'
+import { ModifierDialog } from '@/features/pos/components/ModifierDialog'
+import { TicketLineRow } from '@/features/pos/components/TicketLineRow'
+import { computeTicketTotals } from '@/features/pos/lib/ticketTotals'
+import {
+  ticketCount,
+  ticketSubtotal,
+  useCartStore,
+  type TicketLine,
+} from '@/features/pos/stores/cartStore'
+import { cn, formatCurrency } from '@/lib/utils'
 
+/** Receipt-style ticket panel: lines, totals breakdown, Hold + Charge (spec §5.4). */
 export function Cart() {
   const lines = useCartStore((s) => s.lines)
-  const inc = useCartStore((s) => s.inc)
-  const dec = useCartStore((s) => s.dec)
-  const remove = useCartStore((s) => s.remove)
-  const clear = useCartStore((s) => s.clear)
   const channel = useCartStore((s) => s.channel)
   const tableNumber = useCartStore((s) => s.tableNumber)
+  const updateLine = useCartStore((s) => s.updateLine)
+  const clear = useCartStore((s) => s.clear)
+
+  const { data: settings } = useSettings()
   const createOrder = useCreateOrder()
 
-  const lineList = useMemo(() => cartLineList(lines), [lines])
-  const total = useMemo(() => cartTotal(lines), [lines])
+  const [sheetUid, setSheetUid] = useState<string | null>(null)
+  const [editLine, setEditLine] = useState<TicketLine | null>(null)
 
-  async function handlePlaceOrder(): Promise<void> {
-    if (lineList.length === 0) return
+  const subtotal = useMemo(() => ticketSubtotal(lines), [lines])
+  const count = ticketCount(lines)
+  const totals = settings ? computeTicketTotals(subtotal, settings) : null
+  const sheetLine = lines.find((l) => l.uid === sheetUid) ?? null
+
+  async function handleCharge(): Promise<void> {
+    if (lines.length === 0) return
     try {
       const order = await createOrder.mutateAsync({
-        items: lineList.map((line) => ({
-          product_id: line.product.id,
-          qty: line.qty,
+        items: lines.map((l) => ({
+          product_id: l.product.id,
+          qty: l.qty,
+          modifier_ids: l.modifiers.map((m) => m.modifier_id),
         })),
         channel,
         table_number: channel === 'dine_in' ? tableNumber.trim() || null : null,
@@ -37,56 +53,123 @@ export function Cart() {
       clear()
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } }
-      const msg = axiosErr.response?.data?.message ?? 'ไม่สามารถสร้างบิลได้'
-      toast.error(msg)
+      toast.error(axiosErr.response?.data?.message ?? 'ไม่สามารถสร้างบิลได้')
     }
   }
 
   return (
     <Card className="flex h-full flex-col">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <ShoppingCart className="h-5 w-5" /> ตะกร้า ({lineList.length})
+      <CardHeader className="shrink-0">
+        <CardTitle className="flex items-center justify-between">
+          <span>ตะกร้า</span>
+          <span className="text-sm font-normal tabular-nums text-stone-500">{count} รายการ</span>
         </CardTitle>
       </CardHeader>
+
       <CardContent className="flex-1 overflow-y-auto pt-0">
-        {lineList.length === 0 ? (
-          <p className="text-sm text-slate-500">เลือกเมนูเพื่อเพิ่มลงตะกร้า</p>
+        {lines.length === 0 ? (
+          <div className="flex h-full flex-col items-center justify-center gap-2 py-12 text-center text-sm text-stone-400">
+            <ShoppingCart className="h-8 w-8" />
+            เลือกเมนูเพื่อเริ่มการขาย
+          </div>
         ) : (
           <div>
-            {lineList.map((line) => (
-              <CartItem
-                key={line.product.id}
+            {lines.map((line) => (
+              <TicketLineRow
+                key={line.uid}
                 line={line}
-                onInc={() => {
-                  inc(line.product.id)
-                }}
-                onDec={() => {
-                  dec(line.product.id)
-                }}
-                onRemove={() => {
-                  remove(line.product.id)
+                onClick={() => {
+                  setSheetUid(line.uid)
                 }}
               />
             ))}
           </div>
         )}
       </CardContent>
-      <CardFooter className="flex-col gap-3 border-t border-slate-100 pt-4">
-        <div className="flex w-full items-center justify-between">
-          <span className="text-sm text-slate-500">รวมทั้งสิ้น</span>
-          <span className="text-xl font-bold">{formatCurrency(total)}</span>
+
+      <CardFooter className="shrink-0 flex-col gap-3 border-t border-stone-100 pt-4">
+        <div className="w-full space-y-1 text-sm">
+          <TotalRow label="ยอดรวมย่อย" value={formatCurrency(subtotal)} />
+          {settings && totals && totals.serviceCharge > 0 && (
+            <TotalRow
+              label={`ค่าบริการ (${pct(settings.service_charge_rate)})`}
+              value={formatCurrency(totals.serviceCharge)}
+            />
+          )}
+          {settings && totals && totals.taxTotal > 0 && (
+            <TotalRow
+              label={`VAT (${pct(settings.vat_rate)}) ${settings.tax_inclusive ? 'รวมแล้ว' : 'เพิ่ม'}`}
+              value={formatCurrency(totals.taxTotal)}
+              muted={settings.tax_inclusive}
+            />
+          )}
         </div>
-        <Button
-          className="w-full"
-          size="lg"
-          disabled={lineList.length === 0 || createOrder.isPending}
-          onClick={handlePlaceOrder}
-        >
-          <Receipt className="mr-2 h-4 w-4" />
-          {createOrder.isPending ? 'กำลังบันทึก…' : 'สร้างบิล'}
-        </Button>
+        <div className="flex w-full items-center justify-between border-t border-stone-100 pt-2">
+          <span className="text-sm font-medium text-stone-600">รวมทั้งสิ้น</span>
+          <span className="text-3xl font-bold tabular-nums text-stone-900">
+            {formatCurrency(totals ? totals.total : subtotal)}
+          </span>
+        </div>
+        <div className="grid w-full grid-cols-2 gap-2">
+          <Button
+            variant="outline"
+            size="lg"
+            disabled
+            title="พักบิล (เร็ว ๆ นี้ — M15)"
+            className="h-12"
+          >
+            พักบิล
+          </Button>
+          <Button
+            size="lg"
+            className="h-12"
+            disabled={lines.length === 0 || createOrder.isPending}
+            onClick={handleCharge}
+          >
+            {createOrder.isPending ? 'กำลังบันทึก…' : 'ชำระเงิน'}
+          </Button>
+        </div>
       </CardFooter>
+
+      <CartLineSheet
+        line={sheetLine}
+        open={sheetUid !== null}
+        onOpenChange={(o) => {
+          if (!o) setSheetUid(null)
+        }}
+        onEditOptions={(line) => {
+          setSheetUid(null)
+          setEditLine(line)
+        }}
+      />
+      <ModifierDialog
+        product={editLine?.product ?? null}
+        open={editLine !== null}
+        initial={editLine ? { modifiers: editLine.modifiers, note: editLine.note } : undefined}
+        confirmLabel="บันทึก"
+        onOpenChange={(o) => {
+          if (!o) setEditLine(null)
+        }}
+        onConfirm={(modifiers, note) => {
+          if (editLine) updateLine(editLine.uid, { modifiers, note })
+          setEditLine(null)
+        }}
+      />
     </Card>
   )
+}
+
+function TotalRow({ label, value, muted }: { label: string; value: string; muted?: boolean }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-stone-500">{label}</span>
+      <span className={cn('tabular-nums', muted ? 'text-stone-400' : 'text-stone-700')}>
+        {value}
+      </span>
+    </div>
+  )
+}
+
+function pct(rate: string): string {
+  return `${(Number(rate) * 100).toFixed(0)}%`
 }

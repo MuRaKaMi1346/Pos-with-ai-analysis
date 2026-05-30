@@ -1,6 +1,9 @@
 """Tests for /api/v1/products."""
 
 from fastapi.testclient import TestClient
+from sqlmodel import Session
+
+from app.models import Modifier, ModifierGroup, Product
 
 
 def _bearer(token: str) -> dict[str, str]:
@@ -102,3 +105,80 @@ def test_delete_product_is_soft(client: TestClient, admin_token: str) -> None:
 def test_list_products_requires_login(client: TestClient) -> None:
     response = client.get("/api/v1/products/")
     assert response.status_code == 401
+
+
+# ── M13: per-product modifiers (POS picker) ──────────────────────────
+
+
+def test_product_read_exposes_has_modifiers(
+    client: TestClient,
+    staff_token: str,
+    session: Session,
+    product_latte: Product,
+    modifier_extra_shot: Modifier,
+) -> None:
+    first = client.get(f"/api/v1/products/{product_latte.id}", headers=_bearer(staff_token))
+    assert first.status_code == 200
+    assert first.json()["has_modifiers"] is False
+
+    product_latte.modifiers.append(modifier_extra_shot)
+    session.add(product_latte)
+    session.commit()
+
+    again = client.get(f"/api/v1/products/{product_latte.id}", headers=_bearer(staff_token))
+    assert again.json()["has_modifiers"] is True
+
+
+def test_list_product_modifiers_returns_linked_groups(
+    client: TestClient,
+    staff_token: str,
+    session: Session,
+    product_latte: Product,
+    modifier_group_extras: ModifierGroup,
+    modifier_extra_shot: Modifier,
+) -> None:
+    _ = modifier_group_extras
+    product_latte.modifiers.append(modifier_extra_shot)
+    session.add(product_latte)
+    session.commit()
+
+    response = client.get(
+        f"/api/v1/products/{product_latte.id}/modifiers", headers=_bearer(staff_token)
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body) == 1
+    group = body[0]
+    assert group["name"] == "extras"
+    assert group["max_select"] == 2
+    assert group["is_required"] is False
+    assert [m["name"] for m in group["modifiers"]] == ["Extra shot"]
+    assert group["modifiers"][0]["price_delta"] == "10.00"
+
+
+def test_list_product_modifiers_excludes_inactive(
+    client: TestClient,
+    staff_token: str,
+    session: Session,
+    product_latte: Product,
+    modifier_extra_shot: Modifier,
+) -> None:
+    modifier_extra_shot.is_active = False
+    product_latte.modifiers.append(modifier_extra_shot)
+    session.add_all([product_latte, modifier_extra_shot])
+    session.commit()
+
+    response = client.get(
+        f"/api/v1/products/{product_latte.id}/modifiers", headers=_bearer(staff_token)
+    )
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_list_product_modifiers_unknown_product_404(client: TestClient, staff_token: str) -> None:
+    response = client.get("/api/v1/products/9999/modifiers", headers=_bearer(staff_token))
+    assert response.status_code == 404
+
+
+def test_list_product_modifiers_requires_auth(client: TestClient) -> None:
+    assert client.get("/api/v1/products/1/modifiers").status_code == 401

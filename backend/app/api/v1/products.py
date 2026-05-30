@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, status
 
 from app.core.dependencies import CurrentUserDep, DBSessionDep, require_role
 from app.models import Product, Role
+from app.schemas.modifier import ModifierGroupRead
 from app.schemas.product import ProductCreate, ProductRead, ProductUpdate
 from app.services import product_service
 
@@ -37,6 +38,16 @@ def get_product(
     _current: CurrentUserDep,
 ) -> Product:
     return product_service.get_or_404(session, product_id)
+
+
+@router.get("/{product_id}/modifiers", response_model=list[ModifierGroupRead])
+def list_product_modifiers(
+    product_id: int,
+    session: DBSessionDep,
+    _current: CurrentUserDep,
+) -> list[ModifierGroupRead]:
+    """The product's modifier groups (linked + active) for the POS picker (M13)."""
+    return product_service.list_modifier_groups(session, product_id)
 
 
 @router.post(

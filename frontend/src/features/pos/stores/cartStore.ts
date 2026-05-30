@@ -4,65 +4,127 @@ import { persist } from 'zustand/middleware'
 import type { OrderChannel } from '@/types/order'
 import type { Product } from '@/types/product'
 
-export interface CartLine {
-  product: Product
-  qty: number
+/** A modifier the cashier picked for a line — snapshot for display + order create. */
+export interface SelectedModifier {
+  modifier_id: number
+  name: string
+  price_delta: number
 }
 
-interface CartState {
-  lines: Record<number, CartLine>
-  /** Sub-bar selection — sticky across sales (a station tends to keep one channel). */
+/**
+ * One ticket line. The same product with different modifiers/notes lives on
+ * separate lines, so the key is a local `uid` — not the product id (spec §6).
+ */
+export interface TicketLine {
+  uid: string
+  product: Product
+  qty: number
+  /** Snapshot of the product price at add time. */
+  unit_price: number
+  modifiers: SelectedModifier[]
+  note?: string
+}
+
+interface TicketState {
+  lines: TicketLine[]
+  /** Sub-bar selection — sticky across sales. */
   channel: OrderChannel
-  /** Free-text table label; only meaningful for dine-in. */
   tableNumber: string
-  add: (product: Product) => void
-  inc: (productId: number) => void
-  dec: (productId: number) => void
-  remove: (productId: number) => void
+  addLine: (product: Product, modifiers?: SelectedModifier[], note?: string) => void
+  incLine: (uid: string) => void
+  decLine: (uid: string) => void
+  setQty: (uid: string, qty: number) => void
+  updateLine: (uid: string, patch: { modifiers: SelectedModifier[]; note?: string }) => void
+  removeLine: (uid: string) => void
   setChannel: (channel: OrderChannel) => void
   setTableNumber: (tableNumber: string) => void
-  /** Reset the ticket after a sale: drop lines + table, keep the channel preference. */
+  /** Reset the ticket after a sale: drop lines + table, keep the channel. */
   clear: () => void
 }
 
-export const useCartStore = create<CartState>()(
+function newUid(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+}
+
+function normNote(note?: string): string | undefined {
+  const trimmed = note?.trim()
+  return trimmed ? trimmed : undefined
+}
+
+/** Merge key: identical product + modifier set + note collapse onto one line. */
+function lineKey(productId: number, modifiers: SelectedModifier[], note?: string): string {
+  const mods = modifiers
+    .map((m) => m.modifier_id)
+    .sort((a, b) => a - b)
+    .join(',')
+  return `${productId}|${mods}|${note ?? ''}`
+}
+
+export const useCartStore = create<TicketState>()(
   persist(
     (set) => ({
-      lines: {},
+      lines: [],
       channel: 'takeaway',
       tableNumber: '',
-      add: (product) => {
+      addLine: (product, modifiers = [], note) => {
         set((state) => {
-          const existing = state.lines[product.id]
-          const line: CartLine = existing ? { product, qty: existing.qty + 1 } : { product, qty: 1 }
-          return { lines: { ...state.lines, [product.id]: line } }
-        })
-      },
-      inc: (productId) => {
-        set((state) => {
-          const line = state.lines[productId]
-          if (!line) return state
-          return { lines: { ...state.lines, [productId]: { ...line, qty: line.qty + 1 } } }
-        })
-      },
-      dec: (productId) => {
-        set((state) => {
-          const line = state.lines[productId]
-          if (!line) return state
-          if (line.qty <= 1) {
-            const next = { ...state.lines }
-            delete next[productId]
-            return { lines: next }
+          const cleanNote = normNote(note)
+          const key = lineKey(product.id, modifiers, cleanNote)
+          const existing = state.lines.find(
+            (l) => lineKey(l.product.id, l.modifiers, l.note) === key,
+          )
+          if (existing) {
+            return {
+              lines: state.lines.map((l) =>
+                l.uid === existing.uid ? { ...l, qty: l.qty + 1 } : l,
+              ),
+            }
           }
-          return { lines: { ...state.lines, [productId]: { ...line, qty: line.qty - 1 } } }
+          const line: TicketLine = {
+            uid: newUid(),
+            product,
+            qty: 1,
+            unit_price: Number(product.price),
+            modifiers,
+            note: cleanNote,
+          }
+          return { lines: [...state.lines, line] }
         })
       },
-      remove: (productId) => {
+      incLine: (uid) => {
+        set((state) => ({
+          lines: state.lines.map((l) => (l.uid === uid ? { ...l, qty: l.qty + 1 } : l)),
+        }))
+      },
+      decLine: (uid) => {
         set((state) => {
-          const next = { ...state.lines }
-          delete next[productId]
-          return { lines: next }
+          const line = state.lines.find((l) => l.uid === uid)
+          if (!line) return state
+          if (line.qty <= 1) return { lines: state.lines.filter((l) => l.uid !== uid) }
+          return { lines: state.lines.map((l) => (l.uid === uid ? { ...l, qty: l.qty - 1 } : l)) }
         })
+      },
+      setQty: (uid, qty) => {
+        set((state) => {
+          if (qty <= 0) return { lines: state.lines.filter((l) => l.uid !== uid) }
+          return { lines: state.lines.map((l) => (l.uid === uid ? { ...l, qty } : l)) }
+        })
+      },
+      updateLine: (uid, patch) => {
+        set((state) => {
+          const cleanNote = normNote(patch.note)
+          return {
+            lines: state.lines.map((l) =>
+              l.uid === uid ? { ...l, modifiers: patch.modifiers, note: cleanNote } : l,
+            ),
+          }
+        })
+      },
+      removeLine: (uid) => {
+        set((state) => ({ lines: state.lines.filter((l) => l.uid !== uid) }))
       },
       setChannel: (channel) => {
         set({ channel })
@@ -71,27 +133,45 @@ export const useCartStore = create<CartState>()(
         set({ tableNumber })
       },
       clear: () => {
-        set({ lines: {}, tableNumber: '' })
+        set({ lines: [], tableNumber: '' })
       },
     }),
     {
       name: 'smartbrew-ticket',
-      // Persist the sale so a refresh mid-order doesn't lose the cart (spec §6).
+      // v1: M12 stored `lines` as a product-id map; M13 makes it a uid array.
+      version: 1,
       partialize: (state) => ({
         lines: state.lines,
         channel: state.channel,
         tableNumber: state.tableNumber,
       }),
+      migrate: (persisted, version) => {
+        const prev = (persisted ?? {}) as Partial<TicketState>
+        if (version < 1 || !Array.isArray(prev.lines)) {
+          return { ...prev, lines: [] } as TicketState
+        }
+        return prev as TicketState
+      },
     },
   ),
 )
 
-/** Pure helper — list lines in stable insertion order. */
-export function cartLineList(lines: Record<number, CartLine>): CartLine[] {
-  return Object.values(lines)
+/** Unit price including selected modifier deltas. */
+export function lineUnitPrice(line: TicketLine): number {
+  return line.unit_price + line.modifiers.reduce((sum, m) => sum + m.price_delta, 0)
 }
 
-/** Pure helper — cart subtotal as a number (sums product.price × qty). */
-export function cartTotal(lines: Record<number, CartLine>): number {
-  return Object.values(lines).reduce((sum, line) => sum + Number(line.product.price) * line.qty, 0)
+/** Line subtotal = unit price (with modifiers) × qty. */
+export function lineSubtotal(line: TicketLine): number {
+  return lineUnitPrice(line) * line.qty
+}
+
+/** Ticket subtotal across all lines (pre tax / service / discount). */
+export function ticketSubtotal(lines: TicketLine[]): number {
+  return lines.reduce((sum, l) => sum + lineSubtotal(l), 0)
+}
+
+/** Total item count (sum of quantities) — drives the cart header badge. */
+export function ticketCount(lines: TicketLine[]): number {
+  return lines.reduce((sum, l) => sum + l.qty, 0)
 }

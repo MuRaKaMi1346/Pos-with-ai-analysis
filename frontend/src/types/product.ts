@@ -7,6 +7,8 @@ export interface Product {
   cost: string
   image: string | null
   is_active: boolean
+  /** M13: product has ≥1 active modifier — drives the customise dot + picker. */
+  has_modifiers: boolean
   created_at: string
   updated_at: string
 }

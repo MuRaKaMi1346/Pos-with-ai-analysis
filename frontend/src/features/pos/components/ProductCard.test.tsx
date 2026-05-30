@@ -13,6 +13,7 @@ const latte: Product = {
   cost: '18.00',
   image: null,
   is_active: true,
+  has_modifiers: false,
   created_at: '',
   updated_at: '',
 }
@@ -29,5 +30,12 @@ describe('ProductCard', () => {
     render(<ProductCard product={latte} onAdd={onAdd} />)
     await userEvent.click(screen.getByRole('button', { name: /latte/i }))
     expect(onAdd).toHaveBeenCalledExactlyOnceWith(latte)
+  })
+
+  it('shows a customise chip only when the product has modifiers', () => {
+    const { rerender } = render(<ProductCard product={latte} onAdd={() => {}} />)
+    expect(screen.queryByText('ตัวเลือก')).not.toBeInTheDocument()
+    rerender(<ProductCard product={{ ...latte, has_modifiers: true }} onAdd={() => {}} />)
+    expect(screen.getByText('ตัวเลือก')).toBeInTheDocument()
   })
 })
