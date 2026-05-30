@@ -16,6 +16,7 @@ from app.api.v1 import (
     modifier_groups,
     orders,
     products,
+    receipts,
     recipes,
     refunds,
     settings,
@@ -30,6 +31,7 @@ api_router.include_router(modifier_groups.router)
 api_router.include_router(recipes.router)
 api_router.include_router(inventory.router)
 api_router.include_router(orders.router)
+api_router.include_router(receipts.router)
 api_router.include_router(refunds.router)
 api_router.include_router(discounts.router)
 api_router.include_router(customers.router)
