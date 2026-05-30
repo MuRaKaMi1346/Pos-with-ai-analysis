@@ -43,6 +43,10 @@ export interface Order {
   user_id: number | null
   note: string | null
   items: OrderItemRead[]
+  /** Sum of payments minus refunds (M5). */
+  paid_total: string
+  /** Cash overpayment returned to the customer (M5). */
+  change_due: string
   created_at: string
   updated_at: string
 }

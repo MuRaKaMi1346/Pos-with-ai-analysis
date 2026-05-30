@@ -1,13 +1,13 @@
 import { ShoppingCart } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { useCreateOrder } from '@/features/pos/api/products'
+import { useCreateOrder, usePayOrder } from '@/features/pos/api/products'
 import { useSettings } from '@/features/pos/api/settings'
 import { CartLineSheet } from '@/features/pos/components/CartLineSheet'
 import { ModifierDialog } from '@/features/pos/components/ModifierDialog'
+import { PaymentDialog, type PaymentResult } from '@/features/pos/components/PaymentDialog'
 import { TicketLineRow } from '@/features/pos/components/TicketLineRow'
 import { computeTicketTotals } from '@/features/pos/lib/ticketTotals'
 import {
@@ -17,6 +17,7 @@ import {
   type TicketLine,
 } from '@/features/pos/stores/cartStore'
 import { cn, formatCurrency } from '@/lib/utils'
+import type { TenderInput } from '@/types/payment'
 
 /** Receipt-style ticket panel: lines, totals breakdown, Hold + Charge (spec §5.4). */
 export function Cart() {
@@ -28,33 +29,46 @@ export function Cart() {
 
   const { data: settings } = useSettings()
   const createOrder = useCreateOrder()
+  const payOrder = usePayOrder()
 
   const [sheetUid, setSheetUid] = useState<string | null>(null)
   const [editLine, setEditLine] = useState<TicketLine | null>(null)
+  const [paymentOpen, setPaymentOpen] = useState(false)
+  const [paymentKey, setPaymentKey] = useState('')
 
   const subtotal = useMemo(() => ticketSubtotal(lines), [lines])
   const count = ticketCount(lines)
   const totals = settings ? computeTicketTotals(subtotal, settings) : null
   const sheetLine = lines.find((l) => l.uid === sheetUid) ?? null
 
-  async function handleCharge(): Promise<void> {
-    if (lines.length === 0) return
-    try {
-      const order = await createOrder.mutateAsync({
-        items: lines.map((l) => ({
-          product_id: l.product.id,
-          qty: l.qty,
-          modifier_ids: l.modifiers.map((m) => m.modifier_id),
-        })),
-        channel,
-        table_number: channel === 'dine_in' ? tableNumber.trim() || null : null,
-      })
-      toast.success(`สร้างบิล ${order.order_number} สำเร็จ — ยอด ${formatCurrency(order.total)}`)
-      clear()
-    } catch (err: unknown) {
-      const axiosErr = err as { response?: { data?: { message?: string } } }
-      toast.error(axiosErr.response?.data?.message ?? 'ไม่สามารถสร้างบิลได้')
-    }
+  function openPayment(): void {
+    setPaymentKey(crypto.randomUUID())
+    setPaymentOpen(true)
+  }
+
+  // Create the bill only when payment is confirmed, then settle it — so closing
+  // the dialog mid-entry never leaves an orphan order behind.
+  async function handlePaymentSubmit(tenders: TenderInput[]): Promise<PaymentResult> {
+    const order = await createOrder.mutateAsync({
+      items: lines.map((l) => ({
+        product_id: l.product.id,
+        qty: l.qty,
+        modifier_ids: l.modifiers.map((m) => m.modifier_id),
+      })),
+      channel,
+      table_number: channel === 'dine_in' ? tableNumber.trim() || null : null,
+    })
+    const paid = await payOrder.mutateAsync({
+      orderId: order.id,
+      tenders,
+      idempotencyKey: paymentKey,
+    })
+    return { orderNumber: paid.order_number, changeDue: Number(paid.change_due) }
+  }
+
+  function handlePaymentDone(): void {
+    clear()
+    setPaymentOpen(false)
   }
 
   return (
@@ -123,10 +137,10 @@ export function Cart() {
           <Button
             size="lg"
             className="h-12"
-            disabled={lines.length === 0 || createOrder.isPending}
-            onClick={handleCharge}
+            disabled={lines.length === 0 || !settings}
+            onClick={openPayment}
           >
-            {createOrder.isPending ? 'กำลังบันทึก…' : 'ชำระเงิน'}
+            ชำระเงิน
           </Button>
         </div>
       </CardFooter>
@@ -154,6 +168,13 @@ export function Cart() {
           if (editLine) updateLine(editLine.uid, { modifiers, note })
           setEditLine(null)
         }}
+      />
+      <PaymentDialog
+        open={paymentOpen}
+        onOpenChange={setPaymentOpen}
+        total={totals ? totals.total : subtotal}
+        onSubmit={handlePaymentSubmit}
+        onDone={handlePaymentDone}
       />
     </Card>
   )

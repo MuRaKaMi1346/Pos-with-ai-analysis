@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useCreateOrder } from '@/features/pos/api/products'
+import { useCreateOrder, usePayOrder } from '@/features/pos/api/products'
 import { useSettings } from '@/features/pos/api/settings'
 import { Cart } from '@/features/pos/components/Cart'
 import { useCartStore } from '@/features/pos/stores/cartStore'
@@ -13,7 +13,7 @@ vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 vi.mock('@/features/pos/api/settings', () => ({ useSettings: vi.fn() }))
 vi.mock('@/features/pos/api/products', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/features/pos/api/products')>()
-  return { ...actual, useCreateOrder: vi.fn() }
+  return { ...actual, useCreateOrder: vi.fn(), usePayOrder: vi.fn() }
 })
 
 const latte: Product = {
@@ -47,18 +47,24 @@ const settings: Settings = {
   printer_name: null,
 }
 
-const mutateAsync = vi.fn()
+const createMutate = vi.fn()
+const payMutate = vi.fn()
 
 beforeEach(() => {
   useCartStore.setState({ lines: [], channel: 'takeaway', tableNumber: '' })
-  mutateAsync.mockReset()
+  createMutate.mockReset()
+  payMutate.mockReset()
   vi.mocked(useSettings).mockReturnValue({
     data: settings,
   } as unknown as ReturnType<typeof useSettings>)
   vi.mocked(useCreateOrder).mockReturnValue({
-    mutateAsync,
+    mutateAsync: createMutate,
     isPending: false,
   } as unknown as ReturnType<typeof useCreateOrder>)
+  vi.mocked(usePayOrder).mockReturnValue({
+    mutateAsync: payMutate,
+    isPending: false,
+  } as unknown as ReturnType<typeof usePayOrder>)
 })
 
 afterEach(() => {
@@ -81,21 +87,43 @@ describe('Cart', () => {
     expect(screen.getAllByText(/130\.00/).length).toBeGreaterThan(0)
   })
 
-  it('charges: posts items with modifier ids + channel, then clears the ticket', async () => {
-    mutateAsync.mockResolvedValue({ order_number: '20260530-0001', total: '130.00' })
+  it('charge opens the payment dialog; confirming creates then settles the bill', async () => {
+    createMutate.mockResolvedValue({ id: 7, order_number: '20260530-0007', total: '65.00' })
+    payMutate.mockResolvedValue({
+      order_number: '20260530-0007',
+      total: '65.00',
+      change_due: '0.00',
+    })
     useCartStore.getState().setChannel('dine_in')
     useCartStore.getState().setTableNumber('A3')
-    useCartStore.getState().addLine(latte)
+    useCartStore.getState().addLine(latte) // 65, VAT inclusive → total 65
     render(<Cart />)
 
     await userEvent.click(screen.getByRole('button', { name: 'ชำระเงิน' }))
-    expect(mutateAsync).toHaveBeenCalledWith({
+    expect(screen.getByText('ยอดที่ต้องชำระ')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'พอดี' }))
+    await userEvent.click(screen.getByRole('button', { name: 'เพิ่มรายการชำระ' }))
+    await userEvent.click(screen.getByRole('button', { name: /ยืนยันการชำระเงิน/ }))
+
+    await waitFor(() => {
+      expect(payMutate).toHaveBeenCalled()
+    })
+    expect(createMutate).toHaveBeenCalledWith({
       items: [{ product_id: 1, qty: 1, modifier_ids: [] }],
       channel: 'dine_in',
       table_number: 'A3',
     })
-    await waitFor(() => {
-      expect(useCartStore.getState().lines).toHaveLength(0)
-    })
+    const payArg = payMutate.mock.calls[0]?.[0] as {
+      orderId: number
+      tenders: unknown
+      idempotencyKey: string
+    }
+    expect(payArg.orderId).toBe(7)
+    expect(payArg.tenders).toEqual([{ method: 'cash', amount: 65, tendered_amount: 65 }])
+    expect(typeof payArg.idempotencyKey).toBe('string')
+
+    await userEvent.click(await screen.findByRole('button', { name: 'ขายใหม่' }))
+    expect(useCartStore.getState().lines).toHaveLength(0)
   })
 })
