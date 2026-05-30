@@ -122,4 +122,20 @@ describe('cartStore (ticket)', () => {
     expect(s.tableNumber).toBe('')
     expect(s.channel).toBe('dine_in')
   })
+
+  it('loadOrder replaces the ticket with fresh-uid lines + channel/table', () => {
+    useCartStore.getState().addLine(espresso) // to be replaced
+    useCartStore.getState().loadOrder({
+      lines: [{ product: latte, qty: 2, unit_price: 65, modifiers: [shot] }],
+      channel: 'dine_in',
+      tableNumber: 'B2',
+    })
+    const s = useCartStore.getState()
+    expect(s.lines).toHaveLength(1)
+    expect(s.lines[0]?.product.id).toBe(1)
+    expect(s.lines[0]?.qty).toBe(2)
+    expect(typeof s.lines[0]?.uid).toBe('string')
+    expect(s.channel).toBe('dine_in')
+    expect(s.tableNumber).toBe('B2')
+  })
 })

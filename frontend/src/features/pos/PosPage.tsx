@@ -1,13 +1,26 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
+import { toast } from 'sonner'
 
-import { useCategories, useProducts } from '@/features/pos/api/products'
+import {
+  productModifiersKey,
+  useCategories,
+  useHeldOrders,
+  useProducts,
+  useResumeOrder,
+} from '@/features/pos/api/products'
 import { Cart } from '@/features/pos/components/Cart'
 import { CategoryRail } from '@/features/pos/components/CategoryRail'
+import { HeldTicketsDrawer } from '@/features/pos/components/HeldTicketsDrawer'
 import { MenuPanel } from '@/features/pos/components/MenuPanel'
 import { ModifierDialog } from '@/features/pos/components/ModifierDialog'
 import { PosTopBar } from '@/features/pos/components/PosTopBar'
 import { categoryCounts, filterProducts } from '@/features/pos/lib/filterProducts'
+import { orderToTicketLines } from '@/features/pos/lib/resumeOrder'
 import { useCartStore } from '@/features/pos/stores/cartStore'
+import { apiClient } from '@/lib/api/client'
+import type { ModifierGroup } from '@/types/modifier'
+import type { Order } from '@/types/order'
 import type { Product } from '@/types/product'
 
 /** Three-column POS workspace (spec §5.1): category rail · menu · ticket. */
@@ -23,6 +36,7 @@ export function PosPage() {
   const tableNumber = useCartStore((s) => s.tableNumber)
   const setTableNumber = useCartStore((s) => s.setTableNumber)
   const addLine = useCartStore((s) => s.addLine)
+  const loadOrder = useCartStore((s) => s.loadOrder)
 
   // Products with options open the modifier picker; the rest drop straight in.
   const [modifierTarget, setModifierTarget] = useState<Product | null>(null)
@@ -31,6 +45,48 @@ export function PosPage() {
       setModifierTarget(product)
     } else {
       addLine(product)
+    }
+  }
+
+  // ── Held tickets (M15) ────────────────────────────────────────────
+  const { data: heldOrders, isPending: heldPending } = useHeldOrders()
+  const resumeOrder = useResumeOrder()
+  const queryClient = useQueryClient()
+  const [heldOpen, setHeldOpen] = useState(false)
+  const [resumingId, setResumingId] = useState<number | null>(null)
+
+  async function handleResume(order: Order): Promise<void> {
+    setResumingId(order.id)
+    try {
+      const resumed = await resumeOrder.mutateAsync(order.id)
+      // The order read snapshots modifier price deltas but not names — fetch
+      // them per distinct product so resumed lines read properly.
+      const nameById = new Map<number, string>()
+      const productIds = [...new Set(resumed.items.map((i) => i.product_id))]
+      await Promise.all(
+        productIds.map(async (pid) => {
+          const groups = await queryClient.fetchQuery({
+            queryKey: productModifiersKey(pid),
+            queryFn: async () =>
+              (await apiClient.get<ModifierGroup[]>(`/products/${pid}/modifiers`)).data,
+          })
+          for (const group of groups) {
+            for (const m of group.modifiers) nameById.set(m.id, m.name)
+          }
+        }),
+      )
+      const productById = new Map((products ?? []).map((p) => [p.id, p]))
+      loadOrder({
+        lines: orderToTicketLines(resumed.items, productById, nameById),
+        channel: resumed.channel,
+        tableNumber: resumed.table_number ?? '',
+      })
+      setHeldOpen(false)
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string } } }
+      toast.error(axiosErr.response?.data?.message ?? 'เรียกคืนบิลไม่สำเร็จ')
+    } finally {
+      setResumingId(null)
     }
   }
 
@@ -58,7 +114,10 @@ export function PosPage() {
         onChannelChange={setChannel}
         tableNumber={tableNumber}
         onTableChange={setTableNumber}
-        heldCount={0}
+        heldCount={heldOrders?.length ?? 0}
+        onOpenHeld={() => {
+          setHeldOpen(true)
+        }}
       />
       <div className="flex min-h-0 flex-1">
         <CategoryRail
@@ -91,6 +150,15 @@ export function PosPage() {
           if (modifierTarget) addLine(modifierTarget, modifiers, note)
           setModifierTarget(null)
         }}
+      />
+
+      <HeldTicketsDrawer
+        open={heldOpen}
+        onOpenChange={setHeldOpen}
+        orders={heldOrders ?? []}
+        isPending={heldPending}
+        resumingId={resumingId}
+        onResume={handleResume}
       />
     </div>
   )

@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useCreateOrder, usePayOrder } from '@/features/pos/api/products'
+import { useCreateOrder, useHoldOrder, usePayOrder } from '@/features/pos/api/products'
 import { useSettings } from '@/features/pos/api/settings'
 import { Cart } from '@/features/pos/components/Cart'
 import { useCartStore } from '@/features/pos/stores/cartStore'
@@ -13,7 +13,7 @@ vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
 vi.mock('@/features/pos/api/settings', () => ({ useSettings: vi.fn() }))
 vi.mock('@/features/pos/api/products', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/features/pos/api/products')>()
-  return { ...actual, useCreateOrder: vi.fn(), usePayOrder: vi.fn() }
+  return { ...actual, useCreateOrder: vi.fn(), usePayOrder: vi.fn(), useHoldOrder: vi.fn() }
 })
 
 const latte: Product = {
@@ -49,11 +49,13 @@ const settings: Settings = {
 
 const createMutate = vi.fn()
 const payMutate = vi.fn()
+const holdMutate = vi.fn()
 
 beforeEach(() => {
   useCartStore.setState({ lines: [], channel: 'takeaway', tableNumber: '' })
   createMutate.mockReset()
   payMutate.mockReset()
+  holdMutate.mockReset()
   vi.mocked(useSettings).mockReturnValue({
     data: settings,
   } as unknown as ReturnType<typeof useSettings>)
@@ -65,6 +67,10 @@ beforeEach(() => {
     mutateAsync: payMutate,
     isPending: false,
   } as unknown as ReturnType<typeof usePayOrder>)
+  vi.mocked(useHoldOrder).mockReturnValue({
+    mutateAsync: holdMutate,
+    isPending: false,
+  } as unknown as ReturnType<typeof useHoldOrder>)
 })
 
 afterEach(() => {
@@ -124,6 +130,20 @@ describe('Cart', () => {
     expect(typeof payArg.idempotencyKey).toBe('string')
 
     await userEvent.click(await screen.findByRole('button', { name: 'ขายใหม่' }))
+    expect(useCartStore.getState().lines).toHaveLength(0)
+  })
+
+  it('hold parks the bill: creates then holds, then clears the ticket', async () => {
+    createMutate.mockResolvedValue({ id: 9, order_number: '20260530-0009' })
+    holdMutate.mockResolvedValue({ id: 9, status: 'hold' })
+    useCartStore.getState().addLine(latte)
+    render(<Cart />)
+
+    await userEvent.click(screen.getByRole('button', { name: 'พักบิล' }))
+    await waitFor(() => {
+      expect(holdMutate).toHaveBeenCalledWith(9)
+    })
+    expect(createMutate).toHaveBeenCalled()
     expect(useCartStore.getState().lines).toHaveLength(0)
   })
 })

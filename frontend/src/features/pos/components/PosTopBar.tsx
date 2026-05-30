@@ -15,8 +15,9 @@ interface PosTopBarProps {
   onChannelChange: (channel: OrderChannel) => void
   tableNumber: string
   onTableChange: (table: string) => void
-  /** Held-tickets badge (wired in M15; 0 for now). */
+  /** Held-tickets badge count + drawer opener (M15). */
   heldCount: number
+  onOpenHeld: () => void
 }
 
 /** Dark "command bar" sub-bar for the POS route (spec §5.13). */
@@ -27,6 +28,7 @@ export function PosTopBar({
   tableNumber,
   onTableChange,
   heldCount,
+  onOpenHeld,
 }: PosTopBarProps) {
   return (
     <div className="flex shrink-0 items-center gap-4 border-b border-stone-800 bg-stone-900 px-4 py-2.5 text-stone-100">
@@ -89,9 +91,9 @@ export function PosTopBar({
         </button>
         <button
           type="button"
-          disabled
-          title="บิลที่พักไว้ (เร็ว ๆ นี้ — M15)"
-          className="relative flex items-center gap-2 rounded-lg border border-stone-700 px-3 py-1.5 text-sm text-stone-400"
+          onClick={onOpenHeld}
+          title="บิลที่พักไว้"
+          className="relative flex items-center gap-2 rounded-lg border border-stone-700 px-3 py-1.5 text-sm text-stone-200 transition-colors hover:bg-stone-800"
         >
           <Clock className="h-4 w-4" /> พักบิล
           {heldCount > 0 && (

@@ -1,9 +1,10 @@
 import { ShoppingCart } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { useCreateOrder, usePayOrder } from '@/features/pos/api/products'
+import { useCreateOrder, useHoldOrder, usePayOrder } from '@/features/pos/api/products'
 import { useSettings } from '@/features/pos/api/settings'
 import { CartLineSheet } from '@/features/pos/components/CartLineSheet'
 import { ModifierDialog } from '@/features/pos/components/ModifierDialog'
@@ -30,6 +31,7 @@ export function Cart() {
   const { data: settings } = useSettings()
   const createOrder = useCreateOrder()
   const payOrder = usePayOrder()
+  const holdOrder = useHoldOrder()
 
   const [sheetUid, setSheetUid] = useState<string | null>(null)
   const [editLine, setEditLine] = useState<TicketLine | null>(null)
@@ -46,10 +48,8 @@ export function Cart() {
     setPaymentOpen(true)
   }
 
-  // Create the bill only when payment is confirmed, then settle it — so closing
-  // the dialog mid-entry never leaves an orphan order behind.
-  async function handlePaymentSubmit(tenders: TenderInput[]): Promise<PaymentResult> {
-    const order = await createOrder.mutateAsync({
+  function buildCreatePayload() {
+    return {
       items: lines.map((l) => ({
         product_id: l.product.id,
         qty: l.qty,
@@ -57,7 +57,13 @@ export function Cart() {
       })),
       channel,
       table_number: channel === 'dine_in' ? tableNumber.trim() || null : null,
-    })
+    }
+  }
+
+  // Create the bill only when payment is confirmed, then settle it — so closing
+  // the dialog mid-entry never leaves an orphan order behind.
+  async function handlePaymentSubmit(tenders: TenderInput[]): Promise<PaymentResult> {
+    const order = await createOrder.mutateAsync(buildCreatePayload())
     const paid = await payOrder.mutateAsync({
       orderId: order.id,
       tenders,
@@ -69,6 +75,20 @@ export function Cart() {
   function handlePaymentDone(): void {
     clear()
     setPaymentOpen(false)
+  }
+
+  // Park the current ticket as a HOLD bill for later resume (spec §5.6).
+  async function handleHold(): Promise<void> {
+    if (lines.length === 0) return
+    try {
+      const order = await createOrder.mutateAsync(buildCreatePayload())
+      await holdOrder.mutateAsync(order.id)
+      toast.success(`พักบิล ${order.order_number} แล้ว`)
+      clear()
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string } } }
+      toast.error(axiosErr.response?.data?.message ?? 'พักบิลไม่สำเร็จ')
+    }
   }
 
   return (
@@ -128,8 +148,8 @@ export function Cart() {
           <Button
             variant="outline"
             size="lg"
-            disabled
-            title="พักบิล (เร็ว ๆ นี้ — M15)"
+            disabled={lines.length === 0 || createOrder.isPending || holdOrder.isPending}
+            onClick={handleHold}
             className="h-12"
           >
             พักบิล

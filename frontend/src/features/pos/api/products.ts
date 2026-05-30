@@ -43,6 +43,43 @@ export function useProductModifiers(productId: number | null) {
   })
 }
 
+/** HOLD orders for the held-tickets drawer (M15). Filtered from recent orders. */
+export function useHeldOrders() {
+  return useQuery({
+    queryKey: [...ordersKey, 'held'] as const,
+    queryFn: async () => {
+      const res = await apiClient.get<Order[]>('/orders/?limit=50')
+      return res.data.filter((o) => o.status === 'hold')
+    },
+  })
+}
+
+export function useHoldOrder() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (orderId: number) => {
+      const res = await apiClient.post<Order>(`/orders/${orderId}/hold`)
+      return res.data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ordersKey })
+    },
+  })
+}
+
+export function useResumeOrder() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (orderId: number) => {
+      const res = await apiClient.post<Order>(`/orders/${orderId}/resume`)
+      return res.data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ordersKey })
+    },
+  })
+}
+
 export function useCreateOrder() {
   const qc = useQueryClient()
   return useMutation({

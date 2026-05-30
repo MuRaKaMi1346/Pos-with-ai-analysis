@@ -40,6 +40,12 @@ interface TicketState {
   setTableNumber: (tableNumber: string) => void
   /** Reset the ticket after a sale: drop lines + table, keep the channel. */
   clear: () => void
+  /** Replace the whole ticket from a resumed held order (fresh line uids). */
+  loadOrder: (payload: {
+    lines: Omit<TicketLine, 'uid'>[]
+    channel: OrderChannel
+    tableNumber: string
+  }) => void
 }
 
 function newUid(): string {
@@ -134,6 +140,13 @@ export const useCartStore = create<TicketState>()(
       },
       clear: () => {
         set({ lines: [], tableNumber: '' })
+      },
+      loadOrder: (payload) => {
+        set({
+          lines: payload.lines.map((l) => ({ ...l, uid: newUid() })),
+          channel: payload.channel,
+          tableNumber: payload.tableNumber,
+        })
       },
     }),
     {

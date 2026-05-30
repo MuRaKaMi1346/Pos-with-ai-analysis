@@ -7,6 +7,7 @@ import { PosTopBar } from '@/features/pos/components/PosTopBar'
 function setup(over: Partial<Parameters<typeof PosTopBar>[0]> = {}) {
   const onChannelChange = vi.fn()
   const onTableChange = vi.fn()
+  const onOpenHeld = vi.fn()
   render(
     <PosTopBar
       orderNumber={null}
@@ -15,10 +16,11 @@ function setup(over: Partial<Parameters<typeof PosTopBar>[0]> = {}) {
       tableNumber=""
       onTableChange={onTableChange}
       heldCount={0}
+      onOpenHeld={onOpenHeld}
       {...over}
     />,
   )
-  return { onChannelChange, onTableChange }
+  return { onChannelChange, onTableChange, onOpenHeld }
 }
 
 describe('PosTopBar', () => {
@@ -59,5 +61,11 @@ describe('PosTopBar', () => {
   it('renders a held-tickets badge with the count', () => {
     setup({ heldCount: 3 })
     expect(screen.getByText('3')).toBeInTheDocument()
+  })
+
+  it('opens the held-tickets drawer when the hold button is tapped', async () => {
+    const { onOpenHeld } = setup()
+    await userEvent.click(screen.getByRole('button', { name: /พักบิล/ }))
+    expect(onOpenHeld).toHaveBeenCalled()
   })
 })
