@@ -5,10 +5,15 @@ from collections.abc import Sequence
 from sqlmodel import Session
 
 from app.core.exceptions import ConflictError, NotFoundError
-from app.models import Product
+from app.models import Category, Product
 from app.repositories import product_repo
 from app.schemas.product import ProductCreate, ProductUpdate
 from app.utils.datetime import now_utc
+
+
+def list_categories(session: Session) -> Sequence[Category]:
+    """All categories, name-sorted — powers the POS category rail (M12)."""
+    return product_repo.list_categories(session)
 
 
 def get_or_404(session: Session, product_id: int) -> Product:

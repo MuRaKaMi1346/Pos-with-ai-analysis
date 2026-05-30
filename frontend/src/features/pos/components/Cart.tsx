@@ -15,6 +15,8 @@ export function Cart() {
   const dec = useCartStore((s) => s.dec)
   const remove = useCartStore((s) => s.remove)
   const clear = useCartStore((s) => s.clear)
+  const channel = useCartStore((s) => s.channel)
+  const tableNumber = useCartStore((s) => s.tableNumber)
   const createOrder = useCreateOrder()
 
   const lineList = useMemo(() => cartLineList(lines), [lines])
@@ -28,8 +30,10 @@ export function Cart() {
           product_id: line.product.id,
           qty: line.qty,
         })),
+        channel,
+        table_number: channel === 'dine_in' ? tableNumber.trim() || null : null,
       })
-      toast.success(`สร้างบิล #${order.id} สำเร็จ — ยอด ${formatCurrency(order.total)}`)
+      toast.success(`สร้างบิล ${order.order_number} สำเร็จ — ยอด ${formatCurrency(order.total)}`)
       clear()
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } }
@@ -39,7 +43,7 @@ export function Cart() {
   }
 
   return (
-    <Card className="sticky top-4 flex h-[calc(100vh-2rem)] flex-col">
+    <Card className="flex h-full flex-col">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <ShoppingCart className="h-5 w-5" /> ตะกร้า ({lineList.length})

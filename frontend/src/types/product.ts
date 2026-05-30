@@ -10,3 +10,12 @@ export interface Product {
   created_at: string
   updated_at: string
 }
+
+export type Station = 'bar' | 'kitchen'
+
+/** Category as returned by GET /categories/ (M12 — powers the POS rail). */
+export interface Category {
+  id: number
+  name: string
+  default_station: Station
+}

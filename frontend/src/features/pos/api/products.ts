@@ -2,9 +2,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { apiClient } from '@/lib/api/client'
 import type { Order, OrderCreate } from '@/types/order'
-import type { Product } from '@/types/product'
+import type { Category, Product } from '@/types/product'
 
 export const productsKey = ['products'] as const
+export const categoriesKey = ['categories'] as const
 export const ordersKey = ['orders'] as const
 
 export function useProducts() {
@@ -12,6 +13,16 @@ export function useProducts() {
     queryKey: productsKey,
     queryFn: async () => {
       const res = await apiClient.get<Product[]>('/products/')
+      return res.data
+    },
+  })
+}
+
+export function useCategories() {
+  return useQuery({
+    queryKey: categoriesKey,
+    queryFn: async () => {
+      const res = await apiClient.get<Category[]>('/categories/')
       return res.data
     },
   })

@@ -75,4 +75,22 @@ describe('cartStore', () => {
     useCartStore.getState().add(espresso) // +55 -> 185
     expect(cartTotal(useCartStore.getState().lines)).toBe(185)
   })
+
+  it('setChannel / setTableNumber update the sub-bar fields', () => {
+    useCartStore.getState().setChannel('dine_in')
+    useCartStore.getState().setTableNumber('A3')
+    expect(useCartStore.getState().channel).toBe('dine_in')
+    expect(useCartStore.getState().tableNumber).toBe('A3')
+  })
+
+  it('clear() resets lines + table but keeps the channel preference', () => {
+    useCartStore.getState().setChannel('dine_in')
+    useCartStore.getState().setTableNumber('A3')
+    useCartStore.getState().add(latte)
+    useCartStore.getState().clear()
+    const s = useCartStore.getState()
+    expect(s.lines).toEqual({})
+    expect(s.tableNumber).toBe('')
+    expect(s.channel).toBe('dine_in')
+  })
 })

@@ -1,0 +1,33 @@
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it, vi } from 'vitest'
+
+import { ProductCard } from '@/features/pos/components/ProductCard'
+import type { Product } from '@/types/product'
+
+const latte: Product = {
+  id: 1,
+  name: 'Latte',
+  category_id: 1,
+  price: '65.00',
+  cost: '18.00',
+  image: null,
+  is_active: true,
+  created_at: '',
+  updated_at: '',
+}
+
+describe('ProductCard', () => {
+  it('renders the product name and price', () => {
+    render(<ProductCard product={latte} onAdd={() => {}} />)
+    expect(screen.getByText('Latte')).toBeInTheDocument()
+    expect(screen.getByText(/65\.00/)).toBeInTheDocument()
+  })
+
+  it('calls onAdd with the product when the card is tapped', async () => {
+    const onAdd = vi.fn()
+    render(<ProductCard product={latte} onAdd={onAdd} />)
+    await userEvent.click(screen.getByRole('button', { name: /latte/i }))
+    expect(onAdd).toHaveBeenCalledExactlyOnceWith(latte)
+  })
+})

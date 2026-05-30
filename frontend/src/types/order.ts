@@ -1,4 +1,6 @@
-export type OrderStatus = 'open' | 'paid' | 'voided' | 'refunded'
+export type OrderStatus = 'open' | 'hold' | 'paid' | 'voided' | 'partially_refunded' | 'refunded'
+
+export type OrderChannel = 'dine_in' | 'takeaway' | 'delivery'
 
 export interface OrderItemModifierIn {
   modifier_id: number
@@ -12,6 +14,8 @@ export interface OrderItemIn {
 
 export interface OrderCreate {
   items: OrderItemIn[]
+  channel?: OrderChannel
+  table_number?: string | null
   note?: string | null
 }
 
@@ -31,6 +35,9 @@ export interface OrderItemRead {
 
 export interface Order {
   id: number
+  order_number: string
+  channel: OrderChannel
+  table_number: string | null
   total: string
   status: OrderStatus
   user_id: number | null

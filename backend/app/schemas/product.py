@@ -5,6 +5,8 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.models.kds import Station
+
 
 class ProductCreate(BaseModel):
     name: str = Field(min_length=1, max_length=120)
@@ -28,6 +30,16 @@ class ProductUpdate(BaseModel):
     cost: Decimal | None = Field(default=None, ge=Decimal("0"), max_digits=10, decimal_places=2)
     image: str | None = Field(default=None, max_length=512)
     is_active: bool | None = None
+
+
+class CategoryRead(BaseModel):
+    """Read-only category for the POS rail (M12). Counts are derived client-side."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    default_station: Station
 
 
 class ProductRead(BaseModel):
