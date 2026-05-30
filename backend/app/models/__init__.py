@@ -30,10 +30,14 @@ from app.models.product import (
 )
 from app.models.recipe import Recipe
 from app.models.refund import Refund, RefundItem
+from app.models.shift import CashierShift, CashMovement, CashMovementType
 from app.models.user import Role, User
 
 __all__ = [
     "AuditLog",
+    "CashMovement",
+    "CashMovementType",
+    "CashierShift",
     "Category",
     "Customer",
     "Discount",

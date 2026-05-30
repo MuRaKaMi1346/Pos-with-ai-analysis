@@ -61,6 +61,8 @@ class Order(SQLModel, table=True):
     user_id: int | None = Field(default=None, foreign_key="users.id", index=True)
     # M7: optional customer attached to the bill — null for walk-ins.
     customer_id: int | None = Field(default=None, foreign_key="customers.id", index=True)
+    # M8: the cashier shift this bill was paid under — stamped at pay time.
+    cashier_shift_id: int | None = Field(default=None, foreign_key="cashier_shifts.id", index=True)
     note: str | None = Field(default=None, max_length=255)
 
     # ── Totals breakdown (snapshot at sale time) ────────────────────

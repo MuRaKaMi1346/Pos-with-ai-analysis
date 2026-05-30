@@ -31,7 +31,7 @@ from app.models import (
     PaymentMethod,
 )
 from app.schemas.payment import TenderItem
-from app.services import customer_service
+from app.services import customer_service, shift_service
 from app.utils.datetime import now_utc
 
 _TWO_DP = Decimal("0.01")
@@ -45,6 +45,7 @@ def pay_order(
     tenders: list[TenderItem],
     *,
     settings: Settings,
+    user_id: int,
 ) -> Order:
     """Flip ``order`` to PAID with the supplied tender mix. Atomic.
 
@@ -105,7 +106,13 @@ def pay_order(
     order.updated_at = now
     session.add(order)
 
-    # ── 5. Award loyalty points (no-op for walk-ins) ────────────────
+    # ── 5. Stamp the paying cashier's open shift (if any) — M8 ───────
+    shift = shift_service.get_open_for_user(session, user_id)
+    if shift is not None:
+        order.cashier_shift_id = shift.id
+        session.add(order)
+
+    # ── 6. Award loyalty points (no-op for walk-ins) ────────────────
     customer_service.earn_for_order(session, order, settings=settings)
 
     session.commit()

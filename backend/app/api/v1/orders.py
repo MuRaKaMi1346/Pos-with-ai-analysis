@@ -205,7 +205,9 @@ def pay_order(
             return JSONResponse(status_code=hit.status_code, content=hit.body)
 
     order = order_service.get_or_404(session, order_id)
-    paid = payment_service.pay_order(session, order, data.tenders, settings=settings)
+    paid = payment_service.pay_order(
+        session, order, data.tenders, settings=settings, user_id=current.id
+    )
 
     if idempotency_key:
         response_body = OrderRead.model_validate(paid, from_attributes=True).model_dump(mode="json")

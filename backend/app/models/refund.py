@@ -11,7 +11,8 @@ refunded < order.total) or ``REFUNDED`` (if fully refunded).
 A negative-amount ``Payment`` row tagged ``is_refund=true`` is written
 alongside so accounting reconciles.
 
-``cashier_shift_id`` is deferred to M8 (cashier shifts table).
+``cashier_shift_id`` (M8) attributes the refund's cash-back to the cashier
+shift it was processed under, for end-of-shift reconciliation.
 """
 
 from datetime import datetime
@@ -36,6 +37,8 @@ class Refund(SQLModel, table=True):
     amount: Decimal = Field(max_digits=12, decimal_places=2)  # total refunded
     reason: str | None = Field(default=None, max_length=255)
     refunded_by_user_id: int = Field(foreign_key="users.id")
+    # M8: the cashier shift the refund was processed under — stamped at refund time.
+    cashier_shift_id: int | None = Field(default=None, foreign_key="cashier_shifts.id", index=True)
     created_at: datetime = Field(default_factory=now_utc, index=True, nullable=False)
 
     order: "Order" = Relationship(back_populates="refunds")

@@ -39,5 +39,6 @@ class RefundRead(BaseModel):
     amount: Decimal
     reason: str | None
     refunded_by_user_id: int
+    cashier_shift_id: int | None
     items: list[RefundItemRead] = Field(default_factory=list)
     created_at: datetime

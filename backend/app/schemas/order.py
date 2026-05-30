@@ -69,6 +69,7 @@ class OrderRead(BaseModel):
     status: OrderStatus
     user_id: int | None
     customer_id: int | None
+    cashier_shift_id: int | None
     note: str | None
     items: list[OrderItemRead] = Field(default_factory=list)
     discounts: list[OrderDiscountRead] = Field(default_factory=list)

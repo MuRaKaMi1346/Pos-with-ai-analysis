@@ -49,6 +49,7 @@ from app.models import (
 )
 from app.repositories import inventory_repo, order_repo
 from app.schemas.order import OrderCreate, OrderItemsReplace
+from app.services import shift_service
 from app.utils.datetime import now_utc
 
 _TWO_DP = Decimal("0.01")
@@ -410,6 +411,11 @@ def create_order(
     settings: Settings,
 ) -> Order:
     """Open a new bill. No stock check / deduction — those move to send-to-kitchen (M3)."""
+    # M8: optionally require an open cashier shift before any bill is opened.
+    if settings.pos_require_open_shift and (
+        shift_service.get_open_for_user(session, user_id) is None
+    ):
+        raise ConflictError("no_open_shift")
     items_in = payload.items
 
     products_by_id: dict[int, Product] = {}

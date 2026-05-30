@@ -48,7 +48,7 @@ from app.models import (
 )
 from app.repositories import refund_repo
 from app.schemas.refund import RefundCreate
-from app.services import audit_service, order_service
+from app.services import audit_service, order_service, shift_service
 from app.utils.datetime import now_utc
 
 _REFUND_NUMBER_MAX_RETRIES = 5
@@ -185,6 +185,12 @@ def create_refund(
         now=now,
     )
     assert refund.id is not None
+
+    # M8: attribute this refund's cash-back to the actor's open shift (if any).
+    shift = shift_service.get_open_for_user(session, actor.id)
+    if shift is not None:
+        refund.cashier_shift_id = shift.id
+        session.add(refund)
 
     # ── 3. Persist RefundItems ──────────────────────────────────────
     for item, ri_qty, restock in resolved:

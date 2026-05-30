@@ -65,6 +65,11 @@ class Settings(BaseSettings):
     pos_loyalty_baht_per_earn_point: Decimal = Decimal("20")  # ฿20 spent → 1 pt
     pos_loyalty_baht_per_redeem_point: Decimal = Decimal("0.10")  # 1 pt → ฿0.10
 
+    # ── POS shifts (M8) ─────────────────────────────────────────────
+    # When true, order_service rejects order creation unless the cashier
+    # has an open shift. Default off so non-shift deployments keep working.
+    pos_require_open_shift: bool = False
+
     # ── AI / Ollama ────────────────────────────────────────────────
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "llama3.1:8b"
