@@ -1,4 +1,4 @@
-import { m } from 'framer-motion'
+import { AnimatePresence, m, useReducedMotion } from 'framer-motion'
 import { ShoppingCart } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
@@ -21,6 +21,7 @@ import {
   useCartStore,
   type TicketLine,
 } from '@/features/pos/stores/cartStore'
+import { duration, ease, variants } from '@/lib/motion'
 import { cn, formatCurrency } from '@/lib/utils'
 import type { TenderInput } from '@/types/payment'
 
@@ -44,6 +45,7 @@ export function Cart() {
   const [paymentKey, setPaymentKey] = useState('')
 
   const { registerTarget, landed } = useFlyToCart()
+  const reduced = useReducedMotion() ?? false
   const subtotal = useMemo(() => ticketSubtotal(lines), [lines])
   const count = ticketCount(lines)
   const totals = settings ? computeTicketTotals(subtotal, settings) : null
@@ -119,7 +121,7 @@ export function Cart() {
             key={landed}
             animate={landed === 0 ? { scale: 1 } : { scale: [1, 1.15, 1] }}
             transition={{ duration: 0.3 }}
-            className="text-sm font-normal tabular-nums text-stone-500"
+            className="text-sm font-normal tabular-nums text-text-muted"
           >
             {count} รายการ
           </m.span>
@@ -128,26 +130,44 @@ export function Cart() {
 
       <CardContent className="flex-1 overflow-y-auto pt-0">
         {lines.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center gap-2 py-12 text-center text-sm text-stone-400">
+          <div className="flex h-full flex-col items-center justify-center gap-2 py-12 text-center text-sm text-text-muted">
             <ShoppingCart className="h-8 w-8" />
             เลือกเมนูเพื่อเริ่มการขาย
           </div>
         ) : (
           <div>
-            {lines.map((line) => (
-              <TicketLineRow
-                key={line.uid}
-                line={line}
-                onClick={() => {
-                  setSheetUid(line.uid)
-                }}
-              />
-            ))}
+            {/* Lines rise in on add and slide out to the right on remove. */}
+            <AnimatePresence initial={false}>
+              {lines.map((line) => (
+                <m.div
+                  key={line.uid}
+                  variants={reduced ? undefined : variants.riseIn}
+                  initial={reduced ? false : 'hidden'}
+                  animate={reduced ? false : 'visible'}
+                  exit={
+                    reduced
+                      ? undefined
+                      : {
+                          opacity: 0,
+                          x: 24,
+                          transition: { duration: duration.short, ease: ease.out },
+                        }
+                  }
+                >
+                  <TicketLineRow
+                    line={line}
+                    onClick={() => {
+                      setSheetUid(line.uid)
+                    }}
+                  />
+                </m.div>
+              ))}
+            </AnimatePresence>
           </div>
         )}
       </CardContent>
 
-      <CardFooter className="shrink-0 flex-col gap-3 border-t border-stone-100 pt-4">
+      <CardFooter className="shrink-0 flex-col gap-3 border-t border-border pt-4">
         <div className="w-full space-y-1 text-sm">
           <TotalRow label="ยอดรวมย่อย" value={formatCurrency(subtotal)} />
           {settings && totals && totals.serviceCharge > 0 && (
@@ -164,9 +184,9 @@ export function Cart() {
             />
           )}
         </div>
-        <div className="flex w-full items-center justify-between border-t border-stone-100 pt-2">
-          <span className="text-sm font-medium text-stone-600">รวมทั้งสิ้น</span>
-          <span className="text-3xl font-bold tabular-nums text-stone-900">
+        <div className="flex w-full items-center justify-between border-t border-border pt-2">
+          <span className="text-sm font-medium text-text-muted">รวมทั้งสิ้น</span>
+          <span className="text-3xl font-bold tabular-nums text-text">
             {formatCurrency(totals ? totals.total : subtotal)}
           </span>
         </div>
@@ -229,10 +249,8 @@ export function Cart() {
 function TotalRow({ label, value, muted }: { label: string; value: string; muted?: boolean }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-stone-500">{label}</span>
-      <span className={cn('tabular-nums', muted ? 'text-stone-400' : 'text-stone-700')}>
-        {value}
-      </span>
+      <span className="text-text-muted">{label}</span>
+      <span className={cn('tabular-nums', muted ? 'text-text-muted' : 'text-text')}>{value}</span>
     </div>
   )
 }

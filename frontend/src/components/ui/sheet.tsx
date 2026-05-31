@@ -34,7 +34,7 @@ export const SheetContent = forwardRef<HTMLDivElement, SheetContentProps>(
         ref={ref}
         className={cn(
           'fixed inset-y-0 z-50 flex h-full w-full max-w-sm flex-col gap-4 ' +
-            'border-stone-200 bg-white p-6 shadow-xl',
+            'border-border bg-surface p-6 shadow-xl',
           side === 'right' ? 'right-0 border-l' : 'left-0 border-r',
           className,
         )}
@@ -44,7 +44,7 @@ export const SheetContent = forwardRef<HTMLDivElement, SheetContentProps>(
         <SheetPrimitive.Close
           className={cn(
             'absolute right-4 top-4 rounded-sm opacity-70 transition-opacity ' +
-              'hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-stone-900',
+              'hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]',
           )}
         >
           <X className="h-4 w-4" />
@@ -79,7 +79,7 @@ export const SheetDescription = forwardRef<
 >(({ className, ...props }, ref) => (
   <SheetPrimitive.Description
     ref={ref}
-    className={cn('text-sm text-stone-500', className)}
+    className={cn('text-sm text-text-muted', className)}
     {...props}
   />
 ))
