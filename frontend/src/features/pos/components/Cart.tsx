@@ -1,3 +1,4 @@
+import { m } from 'framer-motion'
 import { ShoppingCart } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
@@ -11,6 +12,7 @@ import { CartLineSheet } from '@/features/pos/components/CartLineSheet'
 import { ModifierDialog } from '@/features/pos/components/ModifierDialog'
 import { PaymentDialog, type PaymentResult } from '@/features/pos/components/PaymentDialog'
 import { TicketLineRow } from '@/features/pos/components/TicketLineRow'
+import { useFlyToCart } from '@/features/pos/hooks/useFlyToCart'
 import { usePosShortcuts } from '@/features/pos/hooks/usePosShortcuts'
 import { computeTicketTotals } from '@/features/pos/lib/ticketTotals'
 import {
@@ -41,6 +43,7 @@ export function Cart() {
   const [paymentOpen, setPaymentOpen] = useState(false)
   const [paymentKey, setPaymentKey] = useState('')
 
+  const { registerTarget, landed } = useFlyToCart()
   const subtotal = useMemo(() => ticketSubtotal(lines), [lines])
   const count = ticketCount(lines)
   const totals = settings ? computeTicketTotals(subtotal, settings) : null
@@ -111,7 +114,15 @@ export function Cart() {
       <CardHeader className="shrink-0">
         <CardTitle className="flex items-center justify-between">
           <span>ตะกร้า</span>
-          <span className="text-sm font-normal tabular-nums text-stone-500">{count} รายการ</span>
+          <m.span
+            ref={registerTarget}
+            key={landed}
+            animate={landed === 0 ? { scale: 1 } : { scale: [1, 1.15, 1] }}
+            transition={{ duration: 0.3 }}
+            className="text-sm font-normal tabular-nums text-stone-500"
+          >
+            {count} รายการ
+          </m.span>
         </CardTitle>
       </CardHeader>
 

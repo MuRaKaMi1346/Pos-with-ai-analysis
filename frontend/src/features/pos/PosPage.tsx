@@ -18,6 +18,7 @@ import { HeldTicketsDrawer } from '@/features/pos/components/HeldTicketsDrawer'
 import { MenuPanel } from '@/features/pos/components/MenuPanel'
 import { ModifierDialog } from '@/features/pos/components/ModifierDialog'
 import { PosTopBar } from '@/features/pos/components/PosTopBar'
+import { FlyToCartProvider } from '@/features/pos/hooks/FlyToCartProvider'
 import { usePosShortcuts } from '@/features/pos/hooks/usePosShortcuts'
 import { nextChannel } from '@/features/pos/lib/channel'
 import { categoryCounts, filterProducts } from '@/features/pos/lib/filterProducts'
@@ -129,78 +130,80 @@ export function PosPage() {
   )
 
   return (
-    <div className="flex h-full flex-col">
-      <PosTopBar
-        orderNumber={null}
-        channel={channel}
-        onChannelChange={setChannel}
-        tableNumber={tableNumber}
-        onTableChange={setTableNumber}
-        heldCount={heldOrders?.length ?? 0}
-        onOpenHeld={() => {
-          setHeldOpen(true)
-        }}
-        customer={customer}
-        onOpenCustomer={() => {
-          setCustomerOpen(true)
-        }}
-      />
-      <div className="flex min-h-0 flex-1">
-        <CategoryRail
-          categories={categories ?? []}
-          counts={counts}
-          totalCount={queryMatches.length}
-          selectedId={selectedCategoryId}
-          onSelect={setSelectedCategoryId}
+    <FlyToCartProvider>
+      <div className="flex h-full flex-col">
+        <PosTopBar
+          orderNumber={null}
+          channel={channel}
+          onChannelChange={setChannel}
+          tableNumber={tableNumber}
+          onTableChange={setTableNumber}
+          heldCount={heldOrders?.length ?? 0}
+          onOpenHeld={() => {
+            setHeldOpen(true)
+          }}
+          customer={customer}
+          onOpenCustomer={() => {
+            setCustomerOpen(true)
+          }}
         />
-        <MenuPanel
-          products={visible}
-          query={query}
-          onQueryChange={setQuery}
-          onAdd={handleAdd}
-          isPending={isPending}
-          isError={isError}
+        <div className="flex min-h-0 flex-1">
+          <CategoryRail
+            categories={categories ?? []}
+            counts={counts}
+            totalCount={queryMatches.length}
+            selectedId={selectedCategoryId}
+            onSelect={setSelectedCategoryId}
+          />
+          <MenuPanel
+            products={visible}
+            query={query}
+            onQueryChange={setQuery}
+            onAdd={handleAdd}
+            isPending={isPending}
+            isError={isError}
+          />
+          <aside className="w-[380px] shrink-0 overflow-hidden p-3">
+            <Cart />
+          </aside>
+        </div>
+
+        <ModifierDialog
+          product={modifierTarget}
+          open={modifierTarget !== null}
+          onOpenChange={(o) => {
+            if (!o) setModifierTarget(null)
+          }}
+          onConfirm={(modifiers, note) => {
+            if (modifierTarget) addLine(modifierTarget, modifiers, note)
+            setModifierTarget(null)
+          }}
         />
-        <aside className="w-[380px] shrink-0 overflow-hidden p-3">
-          <Cart />
-        </aside>
+
+        <HeldTicketsDrawer
+          open={heldOpen}
+          onOpenChange={setHeldOpen}
+          orders={heldOrders ?? []}
+          isPending={heldPending}
+          resumingId={resumingId}
+          onResume={handleResume}
+        />
+
+        <CustomerSearchDialog
+          open={customerOpen}
+          onOpenChange={setCustomerOpen}
+          customer={customer}
+          onAttach={setCustomer}
+        />
+
+        <CommandPalette
+          open={paletteOpen}
+          onOpenChange={setPaletteOpen}
+          products={items}
+          lookup={lookupProductByCode}
+          onSelect={handleAdd}
+        />
       </div>
-
-      <ModifierDialog
-        product={modifierTarget}
-        open={modifierTarget !== null}
-        onOpenChange={(o) => {
-          if (!o) setModifierTarget(null)
-        }}
-        onConfirm={(modifiers, note) => {
-          if (modifierTarget) addLine(modifierTarget, modifiers, note)
-          setModifierTarget(null)
-        }}
-      />
-
-      <HeldTicketsDrawer
-        open={heldOpen}
-        onOpenChange={setHeldOpen}
-        orders={heldOrders ?? []}
-        isPending={heldPending}
-        resumingId={resumingId}
-        onResume={handleResume}
-      />
-
-      <CustomerSearchDialog
-        open={customerOpen}
-        onOpenChange={setCustomerOpen}
-        customer={customer}
-        onAttach={setCustomer}
-      />
-
-      <CommandPalette
-        open={paletteOpen}
-        onOpenChange={setPaletteOpen}
-        products={items}
-        lookup={lookupProductByCode}
-        onSelect={handleAdd}
-      />
-    </div>
+    </FlyToCartProvider>
   )
 }

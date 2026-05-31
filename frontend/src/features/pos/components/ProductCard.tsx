@@ -11,6 +11,7 @@ import { Plus } from 'lucide-react'
 import { useRef, type PointerEvent } from 'react'
 
 import { ProductFallback } from '@/components/ui/ProductFallback'
+import { useFlyToCart } from '@/features/pos/hooks/useFlyToCart'
 import { duration, ease, spring } from '@/lib/motion'
 import { formatCurrency } from '@/lib/utils'
 import type { Product } from '@/types/product'
@@ -28,6 +29,7 @@ interface Props {
 /** Flagship product tile with pseudo-3D tilt on hover/press (pos-ui-motion §4.3). */
 export function ProductCard({ product, onAdd, disabled = false }: Props) {
   const reduced = useReducedMotion() ?? false
+  const { fly } = useFlyToCart()
   const ref = useRef<HTMLButtonElement>(null)
 
   // Raw pointer-derived values (-0.5 .. 0.5 within the card), smoothed via spring.
@@ -72,6 +74,9 @@ export function ProductCard({ product, onAdd, disabled = false }: Props) {
         onPointerMove={handlePointerMove}
         onPointerLeave={handlePointerLeave}
         onClick={() => {
+          // Products with options open a dialog first — only fly when the tap
+          // drops the item straight into the cart.
+          if (!product.has_modifiers) fly(ref.current, product)
           onAdd(product)
         }}
         initial="rest"
