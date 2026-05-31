@@ -1,0 +1,125 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ProductFallback > renders a deterministic SVG (snapshot) for a Latin name 1`] = `
+<svg
+  aria-hidden="true"
+  preserveAspectRatio="xMidYMid slice"
+  viewBox="0 0 100 100"
+>
+  <defs>
+    <lineargradient
+      id="pf-17krow"
+      x1="0"
+      x2="1"
+      y1="0"
+      y2="1"
+    >
+      <stop
+        offset="0%"
+        stop-color="#4b3621"
+      />
+      <stop
+        offset="100%"
+        stop-color="#7c5a3e"
+      />
+    </lineargradient>
+  </defs>
+  <rect
+    fill="url(#pf-17krow)"
+    height="100"
+    width="100"
+  />
+  <g>
+    <polygon
+      fill="rgba(255,255,255,0.18)"
+      points="31,32 69,32 66,38 34,38"
+    />
+    <polygon
+      fill="rgba(255,255,255,0.13)"
+      points="34,34 66,34 60,72 40,72"
+    />
+    <polygon
+      fill="rgba(255,255,255,0.10)"
+      points="66,44 78,47 76,60 66,57"
+    />
+    <polygon
+      fill="rgba(0,0,0,0.07)"
+      points="33,72 67,72 62,80 38,80"
+    />
+  </g>
+  <text
+    dominant-baseline="middle"
+    fill="rgba(255,255,255,0.94)"
+    font-family="Inter, system-ui, sans-serif"
+    font-size="40"
+    font-weight="700"
+    text-anchor="middle"
+    x="50"
+    y="56"
+  >
+    L
+  </text>
+</svg>
+`;
+
+exports[`ProductFallback > renders a deterministic SVG (snapshot) for a Thai name 1`] = `
+<svg
+  aria-hidden="true"
+  preserveAspectRatio="xMidYMid slice"
+  viewBox="0 0 100 100"
+>
+  <defs>
+    <lineargradient
+      id="pf-urg997"
+      x1="0"
+      x2="1"
+      y1="0"
+      y2="1"
+    >
+      <stop
+        offset="0%"
+        stop-color="#7a5230"
+      />
+      <stop
+        offset="100%"
+        stop-color="#b9824f"
+      />
+    </lineargradient>
+  </defs>
+  <rect
+    fill="url(#pf-urg997)"
+    height="100"
+    width="100"
+  />
+  <g>
+    <polygon
+      fill="rgba(255,255,255,0.18)"
+      points="31,32 69,32 66,38 34,38"
+    />
+    <polygon
+      fill="rgba(255,255,255,0.13)"
+      points="34,34 66,34 60,72 40,72"
+    />
+    <polygon
+      fill="rgba(255,255,255,0.10)"
+      points="66,44 78,47 76,60 66,57"
+    />
+    <polygon
+      fill="rgba(0,0,0,0.07)"
+      points="33,72 67,72 62,80 38,80"
+    />
+  </g>
+  <text
+    dominant-baseline="middle"
+    fill="rgba(255,255,255,0.94)"
+    font-family="Inter, system-ui, sans-serif"
+    font-size="40"
+    font-weight="700"
+    text-anchor="middle"
+    x="50"
+    y="56"
+  >
+    ล
+  </text>
+</svg>
+`;
