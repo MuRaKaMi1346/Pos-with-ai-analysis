@@ -1,3 +1,4 @@
+import { LazyMotion, domAnimation } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import { RouterProvider } from 'react-router-dom'
 
@@ -50,7 +51,9 @@ function App() {
 
   return (
     <Providers>
-      <RouterProvider router={router} />
+      <LazyMotion features={domAnimation} strict>
+        <RouterProvider router={router} />
+      </LazyMotion>
     </Providers>
   )
 }
