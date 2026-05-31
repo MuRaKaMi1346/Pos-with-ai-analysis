@@ -1,4 +1,4 @@
-import { Search, UserPlus } from 'lucide-react'
+import { Search, Star, UserPlus } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
@@ -67,7 +67,10 @@ function CustomerSearchBody({
         <div className="flex items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-amber-900">{customer.name}</p>
-            <p className="text-xs text-amber-700">⭐ {customer.loyalty_points} แต้ม</p>
+            <p className="flex items-center gap-1 text-xs text-amber-700">
+              <Star className="h-3 w-3 fill-current" />
+              {customer.loyalty_points} แต้ม
+            </p>
           </div>
           <Button
             variant="ghost"
@@ -124,8 +127,9 @@ function CustomerSearchBody({
                     <span className="block truncate font-medium text-stone-800">{c.name}</span>
                     {c.phone && <span className="block text-xs text-stone-500">{c.phone}</span>}
                   </span>
-                  <span className="shrink-0 text-xs tabular-nums text-stone-500">
-                    ⭐ {c.loyalty_points}
+                  <span className="flex shrink-0 items-center gap-1 text-xs tabular-nums text-stone-500">
+                    <Star className="h-3 w-3 fill-current" />
+                    {c.loyalty_points}
                   </span>
                 </button>
               </li>

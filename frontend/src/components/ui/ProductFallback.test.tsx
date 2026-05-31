@@ -17,7 +17,7 @@ describe('ProductFallback', () => {
   })
 
   it('never renders an emoji in its text content', () => {
-    const { container } = render(<ProductFallback name="Mocha 🍵" />)
+    const { container } = render(<ProductFallback name={'Mocha \u{1F375}'} />)
     expect(EMOJI.test(container.textContent ?? '')).toBe(false)
   })
 })

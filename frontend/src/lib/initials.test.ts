@@ -13,7 +13,7 @@ describe('getInitials', () => {
   })
 
   it('skips emoji and other non-letters', () => {
-    expect(getInitials('Mocha 🍵')).toBe('M')
+    expect(getInitials('Mocha \u{1F375}')).toBe('M')
     expect(getInitials('—Cold Brew')).toBe('CB')
   })
 
