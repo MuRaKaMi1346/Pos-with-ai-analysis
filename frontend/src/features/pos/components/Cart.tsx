@@ -3,6 +3,7 @@ import { ShoppingCart } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
+import { AnimatedNumber } from '@/components/ui/AnimatedNumber'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { useCreateOrder, useHoldOrder, usePayOrder } from '@/features/pos/api/products'
@@ -22,7 +23,6 @@ import {
   type TicketLine,
 } from '@/features/pos/stores/cartStore'
 import { duration, ease, variants } from '@/lib/motion'
-import { cn, formatCurrency } from '@/lib/utils'
 import type { TenderInput } from '@/types/payment'
 
 /** Receipt-style ticket panel: lines, totals breakdown, Hold + Charge (spec §5.4). */
@@ -169,26 +169,27 @@ export function Cart() {
 
       <CardFooter className="shrink-0 flex-col gap-3 border-t border-border pt-4">
         <div className="w-full space-y-1 text-sm">
-          <TotalRow label="ยอดรวมย่อย" value={formatCurrency(subtotal)} />
+          <TotalRow label="ยอดรวมย่อย" value={subtotal} />
           {settings && totals && totals.serviceCharge > 0 && (
             <TotalRow
               label={`ค่าบริการ (${pct(settings.service_charge_rate)})`}
-              value={formatCurrency(totals.serviceCharge)}
+              value={totals.serviceCharge}
             />
           )}
           {settings && totals && totals.taxTotal > 0 && (
             <TotalRow
               label={`VAT (${pct(settings.vat_rate)}) ${settings.tax_inclusive ? 'รวมแล้ว' : 'เพิ่ม'}`}
-              value={formatCurrency(totals.taxTotal)}
+              value={totals.taxTotal}
               muted={settings.tax_inclusive}
             />
           )}
         </div>
         <div className="flex w-full items-center justify-between border-t border-border pt-2">
           <span className="text-sm font-medium text-text-muted">รวมทั้งสิ้น</span>
-          <span className="text-3xl font-bold tabular-nums text-text">
-            {formatCurrency(totals ? totals.total : subtotal)}
-          </span>
+          <AnimatedNumber
+            value={totals ? totals.total : subtotal}
+            className="text-3xl font-bold text-text"
+          />
         </div>
         <div className="grid w-full grid-cols-2 gap-2">
           <Button
@@ -246,11 +247,11 @@ export function Cart() {
   )
 }
 
-function TotalRow({ label, value, muted }: { label: string; value: string; muted?: boolean }) {
+function TotalRow({ label, value, muted }: { label: string; value: number; muted?: boolean }) {
   return (
     <div className="flex items-center justify-between">
       <span className="text-text-muted">{label}</span>
-      <span className={cn('tabular-nums', muted ? 'text-text-muted' : 'text-text')}>{value}</span>
+      <AnimatedNumber value={value} className={muted ? 'text-text-muted' : 'text-text'} />
     </div>
   )
 }
