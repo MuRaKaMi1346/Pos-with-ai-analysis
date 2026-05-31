@@ -1,8 +1,16 @@
+import { AnimatePresence, m, useReducedMotion, type Variants } from 'framer-motion'
 import { Search } from 'lucide-react'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 
+import { EmptyMenu } from '@/components/illustrations/EmptyMenu'
+import { MenuError } from '@/components/illustrations/MenuError'
 import { ProductCard } from '@/features/pos/components/ProductCard'
+import { duration, ease } from '@/lib/motion'
 import type { Product } from '@/types/product'
+
+const GRID = 'grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'
+/** Cap the entrance stagger so a big category stays snappy (pos-ui-motion §4.4). */
+const STAGGER_CAP = 16
 
 interface MenuPanelProps {
   products: Product[]
@@ -11,6 +19,17 @@ interface MenuPanelProps {
   onAdd: (product: Product) => void
   isPending: boolean
   isError: boolean
+}
+
+// Per-item entrance: rise + fade, delayed by its (capped) index. Driven by the
+// item's own initial/animate so it works without a stagger container.
+const gridItem: Variants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: duration.base, ease: ease.out, delay: Math.min(i, STAGGER_CAP) * 0.04 },
+  }),
 }
 
 /** Middle column: search (autofocus + `/` shortcut) over a responsive grid. */
@@ -22,6 +41,7 @@ export function MenuPanel({
   isPending,
   isError,
 }: MenuPanelProps) {
+  const reduced = useReducedMotion() ?? false
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -39,10 +59,10 @@ export function MenuPanel({
   }, [])
 
   return (
-    <section className="flex min-w-0 flex-1 flex-col bg-stone-50">
-      <div className="shrink-0 border-b border-stone-200 p-4">
+    <section className="flex min-w-0 flex-1 flex-col bg-bg">
+      <div className="shrink-0 border-b border-border p-4">
         <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
           <input
             ref={inputRef}
             value={query}
@@ -54,24 +74,50 @@ export function MenuPanel({
             }}
             placeholder="ค้นหาเมนู…  ( / )"
             aria-label="ค้นหาเมนู"
-            className="h-11 w-full rounded-lg border border-stone-300 bg-white pl-10 pr-4 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+            className="h-11 w-full rounded-lg border border-border bg-surface pl-10 pr-4 text-sm text-text placeholder:text-text-muted focus-visible:shadow-[0_0_0_3px_var(--color-primary)] focus-visible:outline-none"
           />
         </div>
       </div>
       <div className="flex-1 overflow-y-auto p-4">
         {isPending ? (
-          <MenuSkeleton />
+          <MenuSkeleton reduced={reduced} />
         ) : isError ? (
-          <p className="py-12 text-center text-sm text-red-600">โหลดเมนูไม่สำเร็จ</p>
+          <StateBlock
+            reduced={reduced}
+            illustration={<MenuError className="h-28 w-28" />}
+            text="โหลดเมนูไม่สำเร็จ"
+            tone="danger"
+          />
         ) : products.length === 0 ? (
-          <p className="py-12 text-center text-sm text-stone-500">
-            {query ? `ไม่พบเมนูที่ตรงกับ "${query}"` : 'ยังไม่มีเมนูในหมวดนี้'}
-          </p>
+          <StateBlock
+            reduced={reduced}
+            illustration={<EmptyMenu className="h-28 w-28" />}
+            text={query ? `ไม่พบเมนูที่ตรงกับ "${query}"` : 'ยังไม่มีเมนูในหมวดนี้'}
+          />
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-            {products.map((product) => (
-              <ProductCard key={product.id} product={product} onAdd={onAdd} />
-            ))}
+          <div className={GRID}>
+            <AnimatePresence>
+              {products.map((product, i) => (
+                <m.div
+                  key={product.id}
+                  custom={i}
+                  variants={reduced ? undefined : gridItem}
+                  initial={reduced ? false : 'hidden'}
+                  animate={reduced ? false : 'visible'}
+                  exit={
+                    reduced
+                      ? undefined
+                      : {
+                          opacity: 0,
+                          y: -8,
+                          transition: { duration: duration.short, ease: ease.out },
+                        }
+                  }
+                >
+                  <ProductCard product={product} onAdd={onAdd} />
+                </m.div>
+              ))}
+            </AnimatePresence>
           </div>
         )}
       </div>
@@ -79,11 +125,46 @@ export function MenuPanel({
   )
 }
 
-function MenuSkeleton() {
+/** Centred illustration + message for the empty / error states. */
+function StateBlock({
+  illustration,
+  text,
+  tone = 'muted',
+  reduced,
+}: {
+  illustration: ReactNode
+  text: string
+  tone?: 'muted' | 'danger'
+  reduced: boolean
+}) {
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-      {Array.from({ length: 10 }).map((_, i) => (
-        <div key={i} className="aspect-[3/4] animate-pulse rounded-xl bg-stone-200" />
+    <m.div
+      initial={reduced ? false : { opacity: 0, y: 8 }}
+      animate={reduced ? false : { opacity: 1, y: 0 }}
+      transition={{ duration: duration.base, ease: ease.out }}
+      className="flex flex-col items-center justify-center gap-3 py-16 text-center"
+    >
+      {illustration}
+      <p className={`text-sm ${tone === 'danger' ? 'text-danger' : 'text-text-muted'}`}>{text}</p>
+    </m.div>
+  )
+}
+
+/** 8 shimmer tiles; the opacity loop is dropped under reduced motion. */
+function MenuSkeleton({ reduced }: { reduced: boolean }) {
+  return (
+    <div className={GRID}>
+      {Array.from({ length: 8 }).map((_, i) => (
+        <m.div
+          key={i}
+          className="aspect-[3/4] rounded-[var(--radius-card)] bg-surface-2"
+          animate={reduced ? undefined : { opacity: [0.6, 1, 0.6] }}
+          transition={
+            reduced
+              ? undefined
+              : { duration: 1, ease: ease.inOut, repeat: Infinity, delay: i * 0.06 }
+          }
+        />
       ))}
     </div>
   )

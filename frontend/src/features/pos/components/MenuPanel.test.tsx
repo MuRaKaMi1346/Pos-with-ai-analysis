@@ -53,14 +53,16 @@ describe('MenuPanel', () => {
     expect(screen.queryByText('Latte')).not.toBeInTheDocument()
   })
 
-  it('shows an error message on failure', () => {
+  it('shows an error message and illustration on failure', () => {
     setup({ isError: true })
     expect(screen.getByText(/โหลดเมนูไม่สำเร็จ/)).toBeInTheDocument()
+    expect(screen.getByTestId('menu-error-illustration')).toBeInTheDocument()
   })
 
-  it('shows a no-match empty state when a query returns nothing', () => {
+  it('shows a no-match empty state with an illustration when a query returns nothing', () => {
     setup({ products: [], query: 'xyz' })
     expect(screen.getByText(/ไม่พบเมนูที่ตรงกับ/)).toBeInTheDocument()
+    expect(screen.getByTestId('empty-menu-illustration')).toBeInTheDocument()
   })
 
   it('reports typing through onQueryChange', async () => {
