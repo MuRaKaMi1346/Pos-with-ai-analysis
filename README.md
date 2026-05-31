@@ -12,13 +12,15 @@
 ├── backend/   # FastAPI · SQLModel · Alembic · ai/ (LightGBM, Prophet, Ollama)
 ├── frontend/  # React + TS (Vite-SWC) · Tailwind · shadcn/ui · TanStack Query
 ├── docs/
-│   └── architecture-spec.md   # spec ตัวเต็ม (Thai)
+│   ├── architecture-spec.md   # spec ตัวเต็ม (Thai)
+│   └── pos-guide.md           # คู่มือใช้งาน POS + onboarding (M12–M20)
 ├── CLAUDE.md                  # กฎทำงานของ Claude Code
 └── README.md                  # ไฟล์นี้
 ```
 
 ที่มาของกฎ/มาตรฐาน + workflow แบ่ง 8 ขั้น อยู่ใน [`docs/architecture-spec.md`](docs/architecture-spec.md)
 สรุปกฎที่ใช้บ่อยอยู่ใน [`CLAUDE.md`](CLAUDE.md)
+คู่มือใช้งานหน้า POS + การตั้งค่าเริ่มต้น (แอดมิน/แคชเชียร์): [`docs/pos-guide.md`](docs/pos-guide.md)
 
 ---
 
