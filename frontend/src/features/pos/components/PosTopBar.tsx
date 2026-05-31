@@ -1,7 +1,9 @@
-import { Clock, Hash, Keyboard, Rows2, User } from 'lucide-react'
+import { m, useReducedMotion } from 'framer-motion'
+import { Clock, Hash, Keyboard, Rows2, Star, User } from 'lucide-react'
 import { useState } from 'react'
 
 import { ShortcutsDialog } from '@/features/pos/components/ShortcutsDialog'
+import { spring } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 import { useUiStore } from '@/stores/uiStore'
 import type { Customer } from '@/types/customer'
@@ -41,10 +43,16 @@ export function PosTopBar({
 }: PosTopBarProps) {
   const density = useUiStore((s) => s.density)
   const toggleDensity = useUiStore((s) => s.toggleDensity)
+  const reduced = useReducedMotion() ?? false
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
 
   return (
-    <div className="flex shrink-0 items-center gap-4 border-b border-stone-800 bg-stone-900 px-4 py-2.5 text-stone-100">
+    <m.div
+      initial={reduced ? false : { opacity: 0, y: -12 }}
+      animate={reduced ? false : { opacity: 1, y: 0 }}
+      transition={spring.snappy}
+      className="flex shrink-0 items-center gap-4 border-b border-black/20 bg-surface-ink px-4 py-2.5 text-stone-100"
+    >
       <div className="flex flex-col leading-tight">
         <span className="text-[10px] uppercase tracking-wider text-stone-400">
           {orderNumber ? 'บิล' : 'การขาย'}
@@ -52,30 +60,7 @@ export function PosTopBar({
         <span className="font-semibold tabular-nums">{orderNumber ?? 'New Sale'}</span>
       </div>
 
-      <div
-        className="flex items-center gap-1 rounded-lg bg-stone-800 p-1"
-        role="group"
-        aria-label="ช่องทางการขาย"
-      >
-        {CHANNELS.map((c) => (
-          <button
-            key={c.value}
-            type="button"
-            aria-pressed={channel === c.value}
-            onClick={() => {
-              onChannelChange(c.value)
-            }}
-            className={cn(
-              'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-              channel === c.value
-                ? 'bg-amber-500 text-stone-900'
-                : 'text-stone-300 hover:bg-stone-700',
-            )}
-          >
-            {c.label}
-          </button>
-        ))}
-      </div>
+      <ChannelToggle channel={channel} onChannelChange={onChannelChange} reduced={reduced} />
 
       {channel === 'dine_in' && (
         <div className="relative">
@@ -88,7 +73,7 @@ export function PosTopBar({
             placeholder="โต๊ะ"
             aria-label="หมายเลขโต๊ะ"
             maxLength={16}
-            className="h-9 w-28 rounded-md border border-stone-700 bg-stone-800 pl-8 pr-2 text-sm text-stone-100 placeholder:text-stone-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+            className="h-9 w-28 rounded-md border border-stone-700 bg-stone-800 pl-8 pr-2 text-sm text-stone-100 placeholder:text-stone-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
           />
         </div>
       )}
@@ -102,7 +87,7 @@ export function PosTopBar({
           aria-label="สลับความหนาแน่น"
           className={cn(
             'flex h-9 w-9 items-center justify-center rounded-lg border border-stone-700 transition-colors hover:bg-stone-800',
-            density === 'compact' ? 'text-amber-400' : 'text-stone-300',
+            density === 'compact' ? 'text-primary' : 'text-stone-300',
           )}
         >
           <Rows2 className="h-4 w-4" />
@@ -128,7 +113,10 @@ export function PosTopBar({
           {customer ? (
             <span className="flex items-center gap-1">
               <span className="max-w-[10rem] truncate">{customer.name}</span>
-              <span className="text-amber-400">⭐ {customer.loyalty_points}</span>
+              <span className="flex items-center gap-1 text-primary">
+                <Star className="h-3.5 w-3.5 fill-current" />
+                {customer.loyalty_points}
+              </span>
             </span>
           ) : (
             'Walk-in'
@@ -142,13 +130,64 @@ export function PosTopBar({
         >
           <Clock className="h-4 w-4" /> พักบิล
           {heldCount > 0 && (
-            <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold text-stone-900">
+            <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-fg">
               {heldCount}
             </span>
           )}
         </button>
       </div>
       <ShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
+    </m.div>
+  )
+}
+
+/** Segmented channel control with a pill that glides to the active option. */
+function ChannelToggle({
+  channel,
+  onChannelChange,
+  reduced,
+}: {
+  channel: OrderChannel
+  onChannelChange: (channel: OrderChannel) => void
+  reduced: boolean
+}) {
+  const activeIndex = Math.max(
+    CHANNELS.findIndex((c) => c.value === channel),
+    0,
+  )
+
+  return (
+    <div
+      role="group"
+      aria-label="ช่องทางการขาย"
+      className="relative grid grid-cols-3 rounded-lg bg-black/20 p-1"
+    >
+      {/* Equal-width segments → the pill only needs a transform to slide. */}
+      <m.div
+        aria-hidden
+        data-testid="channel-pill"
+        className="pointer-events-none absolute inset-y-1 left-1 rounded-md bg-primary"
+        style={{ width: 'calc((100% - 0.5rem) / 3)' }}
+        initial={false}
+        animate={{ x: `${activeIndex * 100}%` }}
+        transition={reduced ? { duration: 0 } : spring.snappy}
+      />
+      {CHANNELS.map((c) => (
+        <button
+          key={c.value}
+          type="button"
+          aria-pressed={channel === c.value}
+          onClick={() => {
+            onChannelChange(c.value)
+          }}
+          className={cn(
+            'relative z-10 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+            channel === c.value ? 'text-primary-fg' : 'text-stone-300 hover:text-white',
+          )}
+        >
+          {c.label}
+        </button>
+      ))}
     </div>
   )
 }

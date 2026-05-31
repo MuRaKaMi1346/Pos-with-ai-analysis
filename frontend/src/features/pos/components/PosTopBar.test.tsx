@@ -56,6 +56,11 @@ describe('PosTopBar', () => {
     expect(onChannelChange).toHaveBeenCalledWith('dine_in')
   })
 
+  it('renders the sliding channel pill indicator', () => {
+    setup({ channel: 'delivery' })
+    expect(screen.getByTestId('channel-pill')).toBeInTheDocument()
+  })
+
   it('hides the table input unless the channel is dine-in', () => {
     setup({ channel: 'takeaway' })
     expect(screen.queryByLabelText('หมายเลขโต๊ะ')).not.toBeInTheDocument()
