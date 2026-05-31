@@ -6,6 +6,9 @@ export interface Product {
   price: string
   cost: string
   image: string | null
+  /** M15: scan-to-add codes (null when unset). */
+  sku: string | null
+  barcode: string | null
   is_active: boolean
   /** M13: product has ≥1 active modifier — drives the customise dot + picker. */
   has_modifiers: boolean

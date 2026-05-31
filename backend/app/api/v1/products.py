@@ -31,6 +31,19 @@ def list_products(
     )
 
 
+@router.get("/lookup", response_model=ProductRead)
+def lookup_product(
+    code: str,
+    session: DBSessionDep,
+    _current: CurrentUserDep,
+) -> Product:
+    """Resolve a scanned SKU / barcode to an active product (M15). 404 if unknown.
+
+    Declared before ``/{product_id}`` so ``lookup`` isn't parsed as an id.
+    """
+    return product_service.lookup_by_code(session, code)
+
+
 @router.get("/{product_id}", response_model=ProductRead)
 def get_product(
     product_id: int,

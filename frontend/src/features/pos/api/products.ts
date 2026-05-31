@@ -80,6 +80,16 @@ export function useResumeOrder() {
   })
 }
 
+/** One-shot SKU / barcode resolve for the command palette (M15). Null on 404. */
+export async function lookupProductByCode(code: string): Promise<Product | null> {
+  try {
+    const res = await apiClient.get<Product>('/products/lookup', { params: { code } })
+    return res.data
+  } catch {
+    return null
+  }
+}
+
 export function useCreateOrder() {
   const qc = useQueryClient()
   return useMutation({

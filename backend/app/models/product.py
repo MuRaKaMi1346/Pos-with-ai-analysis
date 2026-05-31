@@ -53,6 +53,9 @@ class Product(SQLModel, table=True):
     price: Decimal = Field(default=Decimal("0.00"), max_digits=10, decimal_places=2)
     cost: Decimal = Field(default=Decimal("0.00"), max_digits=10, decimal_places=2)
     image: str | None = Field(default=None, max_length=512)
+    # M15: scan-to-add codes — unique when set (SQLite allows multiple NULLs).
+    sku: str | None = Field(default=None, max_length=64, index=True, unique=True)
+    barcode: str | None = Field(default=None, max_length=64, index=True, unique=True)
     is_active: bool = Field(default=True, index=True)
     created_at: datetime = Field(default_factory=now_utc, nullable=False)
     updated_at: datetime = Field(default_factory=now_utc, nullable=False)

@@ -13,6 +13,8 @@ function product(id: number, name: string): Product {
     cost: '0',
     image: null,
     is_active: true,
+    sku: null,
+    barcode: null,
     has_modifiers: false,
     created_at: '',
     updated_at: '',

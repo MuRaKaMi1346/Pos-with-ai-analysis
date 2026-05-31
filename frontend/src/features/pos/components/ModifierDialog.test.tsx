@@ -20,6 +20,8 @@ const product: Product = {
   cost: '0',
   image: null,
   is_active: true,
+  sku: null,
+  barcode: null,
   has_modifiers: true,
   created_at: '',
   updated_at: '',

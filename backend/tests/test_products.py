@@ -182,3 +182,73 @@ def test_list_product_modifiers_unknown_product_404(client: TestClient, staff_to
 
 def test_list_product_modifiers_requires_auth(client: TestClient) -> None:
     assert client.get("/api/v1/products/1/modifiers").status_code == 401
+
+
+# ── M15: SKU / barcode lookup (scan-to-add) ──────────────────────────
+
+
+def test_lookup_product_by_sku_or_barcode(
+    client: TestClient,
+    staff_token: str,
+    session: Session,
+    product_latte: Product,
+) -> None:
+    product_latte.sku = "LAT-001"
+    product_latte.barcode = "8851234567890"
+    session.add(product_latte)
+    session.commit()
+
+    by_barcode = client.get(
+        "/api/v1/products/lookup", params={"code": "8851234567890"}, headers=_bearer(staff_token)
+    )
+    assert by_barcode.status_code == 200
+    assert by_barcode.json()["id"] == product_latte.id
+    assert by_barcode.json()["barcode"] == "8851234567890"
+
+    by_sku = client.get(
+        "/api/v1/products/lookup", params={"code": "LAT-001"}, headers=_bearer(staff_token)
+    )
+    assert by_sku.status_code == 200
+    assert by_sku.json()["sku"] == "LAT-001"
+
+
+def test_lookup_unknown_code_returns_404(
+    client: TestClient, staff_token: str, product_latte: Product
+) -> None:
+    _ = product_latte
+    response = client.get(
+        "/api/v1/products/lookup", params={"code": "NOPE"}, headers=_bearer(staff_token)
+    )
+    assert response.status_code == 404
+
+
+def test_lookup_excludes_inactive_products(
+    client: TestClient,
+    staff_token: str,
+    session: Session,
+    product_latte: Product,
+) -> None:
+    product_latte.barcode = "111"
+    product_latte.is_active = False
+    session.add(product_latte)
+    session.commit()
+    response = client.get(
+        "/api/v1/products/lookup", params={"code": "111"}, headers=_bearer(staff_token)
+    )
+    assert response.status_code == 404
+
+
+def test_lookup_requires_auth(client: TestClient) -> None:
+    assert client.get("/api/v1/products/lookup", params={"code": "x"}).status_code == 401
+
+
+def test_create_product_round_trips_sku_barcode(client: TestClient, admin_token: str) -> None:
+    created = client.post(
+        "/api/v1/products/",
+        headers=_bearer(admin_token),
+        json={"name": "Scan Me", "price": "20.00", "sku": "SM-1", "barcode": "999"},
+    )
+    assert created.status_code == 201
+    body = created.json()
+    assert body["sku"] == "SM-1"
+    assert body["barcode"] == "999"

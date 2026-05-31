@@ -62,6 +62,14 @@ def get_or_404(session: Session, product_id: int) -> Product:
     return product
 
 
+def lookup_by_code(session: Session, code: str) -> Product:
+    """Resolve a scanned SKU / barcode to an active product (M15); 404 if none."""
+    product = product_repo.get_by_code(session, code)
+    if product is None:
+        raise NotFoundError(f"product_code_not_found:{code}")
+    return product
+
+
 def list_filtered(
     session: Session,
     *,

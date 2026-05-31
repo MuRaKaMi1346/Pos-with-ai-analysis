@@ -2,9 +2,10 @@
 
 from collections.abc import Sequence
 
+from sqlalchemy import or_
 from sqlalchemy.orm import selectinload
 from sqlalchemy.sql import ColumnElement
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from app.models import Category, Modifier, Product
 from app.repositories.base import BaseRepository
@@ -14,6 +15,15 @@ repository = BaseRepository(Product)
 
 def get_by_name(session: Session, name: str) -> Product | None:
     return session.exec(select(Product).where(Product.name == name)).first()
+
+
+def get_by_code(session: Session, code: str) -> Product | None:
+    """Match an active product by exact SKU or barcode — powers scan-to-add (M15)."""
+    statement = select(Product).where(
+        col(Product.is_active).is_(True),
+        or_(col(Product.sku) == code, col(Product.barcode) == code),
+    )
+    return session.exec(statement).first()
 
 
 def get_with_modifiers(session: Session, product_id: int) -> Product | None:

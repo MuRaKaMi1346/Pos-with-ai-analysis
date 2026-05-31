@@ -19,6 +19,8 @@ class ProductCreate(BaseModel):
         decimal_places=2,
     )
     image: str | None = Field(default=None, max_length=512)
+    sku: str | None = Field(default=None, max_length=64)
+    barcode: str | None = Field(default=None, max_length=64)
 
 
 class ProductUpdate(BaseModel):
@@ -29,6 +31,8 @@ class ProductUpdate(BaseModel):
     price: Decimal | None = Field(default=None, ge=Decimal("0"), max_digits=10, decimal_places=2)
     cost: Decimal | None = Field(default=None, ge=Decimal("0"), max_digits=10, decimal_places=2)
     image: str | None = Field(default=None, max_length=512)
+    sku: str | None = Field(default=None, max_length=64)
+    barcode: str | None = Field(default=None, max_length=64)
     is_active: bool | None = None
 
 
@@ -51,6 +55,8 @@ class ProductRead(BaseModel):
     price: Decimal
     cost: Decimal
     image: str | None
+    sku: str | None
+    barcode: str | None
     is_active: bool
     # M13: true when the product has at least one active modifier — the POS
     # uses it to show a customise dot and open the modifier picker on tap.
