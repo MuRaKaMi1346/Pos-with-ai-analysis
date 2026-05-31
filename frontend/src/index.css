@@ -2,6 +2,18 @@
 
 @theme {
   --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  /* Semantic design tokens (M19, spec §5.13). Brand = the amber POS accent;
+     these add bg-brand / text-success / bg-surface / text-danger utilities.
+     Migrating existing raw stone / amber colour usages onto them is
+     intentionally deferred (cosmetic + untested). */
+  --color-brand: #d97706;
+  --color-brand-strong: #b45309;
+  --color-surface: #ffffff;
+  --color-surface-muted: #fafaf9;
+  --color-success: #16a34a;
+  --color-warning: #f59e0b;
+  --color-danger: #dc2626;
 }
 
 :root {
@@ -23,6 +35,17 @@ body,
   margin: 0;
   background-color: #f8fafc;
   color: #0f172a;
+}
+
+/* Density (M19, spec §5.13): a global compact / comfortable scale on the root
+   font-size so rem-based Tailwind spacing + type scale together. Toggled from
+   the POS sub-bar; applied to <html> by AppShell. */
+html {
+  font-size: 16px;
+}
+
+html[data-density='compact'] {
+  font-size: 14px;
 }
 
 /* Receipt printing (M16): hide the app + any dialog portal and show only the

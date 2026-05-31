@@ -11,6 +11,7 @@ import { CartLineSheet } from '@/features/pos/components/CartLineSheet'
 import { ModifierDialog } from '@/features/pos/components/ModifierDialog'
 import { PaymentDialog, type PaymentResult } from '@/features/pos/components/PaymentDialog'
 import { TicketLineRow } from '@/features/pos/components/TicketLineRow'
+import { usePosShortcuts } from '@/features/pos/hooks/usePosShortcuts'
 import { computeTicketTotals } from '@/features/pos/lib/ticketTotals'
 import {
   ticketCount,
@@ -94,6 +95,16 @@ export function Cart() {
       toast.error(axiosErr.response?.data?.message ?? 'พักบิลไม่สำเร็จ')
     }
   }
+
+  // F8 = hold, F9 = charge (spec §5.14) — guarded like the footer buttons.
+  usePosShortcuts({
+    onHold: () => {
+      if (lines.length > 0) void handleHold()
+    },
+    onCharge: () => {
+      if (lines.length > 0 && settings) openPayment()
+    },
+  })
 
   return (
     <Card className="flex h-full flex-col">

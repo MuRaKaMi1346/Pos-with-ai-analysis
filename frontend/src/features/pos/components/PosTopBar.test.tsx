@@ -1,9 +1,14 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { PosTopBar } from '@/features/pos/components/PosTopBar'
+import { useUiStore } from '@/stores/uiStore'
 import type { Customer } from '@/types/customer'
+
+beforeEach(() => {
+  useUiStore.setState({ density: 'comfortable' })
+})
 
 function setup(over: Partial<Parameters<typeof PosTopBar>[0]> = {}) {
   const onChannelChange = vi.fn()
@@ -92,5 +97,17 @@ describe('PosTopBar', () => {
     setup({ customer: ann })
     expect(screen.getByText('Ann')).toBeInTheDocument()
     expect(screen.getByText(/120/)).toBeInTheDocument()
+  })
+
+  it('toggles density', async () => {
+    setup()
+    await userEvent.click(screen.getByRole('button', { name: 'สลับความหนาแน่น' }))
+    expect(useUiStore.getState().density).toBe('compact')
+  })
+
+  it('opens the keyboard shortcuts cheatsheet', async () => {
+    setup()
+    await userEvent.click(screen.getByRole('button', { name: 'คีย์ลัด' }))
+    expect(screen.getByText('F9')).toBeInTheDocument()
   })
 })

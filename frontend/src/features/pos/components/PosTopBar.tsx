@@ -1,6 +1,9 @@
-import { Clock, Hash, User } from 'lucide-react'
+import { Clock, Hash, Keyboard, Rows2, User } from 'lucide-react'
+import { useState } from 'react'
 
+import { ShortcutsDialog } from '@/features/pos/components/ShortcutsDialog'
 import { cn } from '@/lib/utils'
+import { useUiStore } from '@/stores/uiStore'
 import type { Customer } from '@/types/customer'
 import type { OrderChannel } from '@/types/order'
 
@@ -36,6 +39,10 @@ export function PosTopBar({
   customer,
   onOpenCustomer,
 }: PosTopBarProps) {
+  const density = useUiStore((s) => s.density)
+  const toggleDensity = useUiStore((s) => s.toggleDensity)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
+
   return (
     <div className="flex shrink-0 items-center gap-4 border-b border-stone-800 bg-stone-900 px-4 py-2.5 text-stone-100">
       <div className="flex flex-col leading-tight">
@@ -89,6 +96,30 @@ export function PosTopBar({
       <div className="ml-auto flex items-center gap-2">
         <button
           type="button"
+          onClick={toggleDensity}
+          aria-pressed={density === 'compact'}
+          title={density === 'compact' ? 'ความหนาแน่น: แน่น' : 'ความหนาแน่น: ปกติ'}
+          aria-label="สลับความหนาแน่น"
+          className={cn(
+            'flex h-9 w-9 items-center justify-center rounded-lg border border-stone-700 transition-colors hover:bg-stone-800',
+            density === 'compact' ? 'text-amber-400' : 'text-stone-300',
+          )}
+        >
+          <Rows2 className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setShortcutsOpen(true)
+          }}
+          title="คีย์ลัด"
+          aria-label="คีย์ลัด"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-stone-700 text-stone-300 transition-colors hover:bg-stone-800"
+        >
+          <Keyboard className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
           onClick={onOpenCustomer}
           title="แนบลูกค้า"
           className="flex items-center gap-2 rounded-lg border border-stone-700 px-3 py-1.5 text-sm text-stone-200 transition-colors hover:bg-stone-800"
@@ -117,6 +148,7 @@ export function PosTopBar({
           )}
         </button>
       </div>
+      <ShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
     </div>
   )
 }

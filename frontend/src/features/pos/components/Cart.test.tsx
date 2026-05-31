@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -149,5 +149,13 @@ describe('Cart', () => {
     })
     expect(createMutate).toHaveBeenCalled()
     expect(useCartStore.getState().lines).toHaveLength(0)
+  })
+
+  it('F9 opens the payment dialog', async () => {
+    useCartStore.getState().addLine(latte)
+    render(<Cart />)
+    expect(screen.queryByText('ยอดที่ต้องชำระ')).not.toBeInTheDocument()
+    fireEvent.keyDown(window, { key: 'F9' })
+    expect(await screen.findByText('ยอดที่ต้องชำระ')).toBeInTheDocument()
   })
 })

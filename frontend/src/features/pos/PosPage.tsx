@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 import {
@@ -18,6 +18,8 @@ import { HeldTicketsDrawer } from '@/features/pos/components/HeldTicketsDrawer'
 import { MenuPanel } from '@/features/pos/components/MenuPanel'
 import { ModifierDialog } from '@/features/pos/components/ModifierDialog'
 import { PosTopBar } from '@/features/pos/components/PosTopBar'
+import { usePosShortcuts } from '@/features/pos/hooks/usePosShortcuts'
+import { nextChannel } from '@/features/pos/lib/channel'
 import { categoryCounts, filterProducts } from '@/features/pos/lib/filterProducts'
 import { orderToTicketLines } from '@/features/pos/lib/resumeOrder'
 import { useCartStore } from '@/features/pos/stores/cartStore'
@@ -45,19 +47,18 @@ export function PosPage() {
   const [customerOpen, setCustomerOpen] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
 
-  // ⌘K / Ctrl+K opens the quick-search + barcode palette (spec §5.8).
-  useEffect(() => {
-    function onKey(e: KeyboardEvent): void {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault()
-        setPaletteOpen(true)
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => {
-      window.removeEventListener('keydown', onKey)
-    }
-  }, [])
+  // POS keyboard shortcuts (spec §5.14): palette (⌘K), customer (F2), channel (F4).
+  usePosShortcuts({
+    onPalette: () => {
+      setPaletteOpen(true)
+    },
+    onCustomer: () => {
+      setCustomerOpen(true)
+    },
+    onToggleChannel: () => {
+      setChannel(nextChannel(channel))
+    },
+  })
 
   // Products with options open the modifier picker; the rest drop straight in.
   const [modifierTarget, setModifierTarget] = useState<Product | null>(null)
