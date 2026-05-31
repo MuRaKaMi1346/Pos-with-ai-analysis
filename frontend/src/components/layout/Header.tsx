@@ -1,4 +1,4 @@
-import { BarChart3, Brain, Coffee, LogOut, Wallet } from 'lucide-react'
+import { BarChart3, Brain, ChefHat, Coffee, LogOut, Wallet } from 'lucide-react'
 import { NavLink, useNavigate } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
@@ -38,6 +38,9 @@ export function Header() {
           </NavLink>
           <NavLink to="/shift" className={navLinkClass}>
             <Wallet className="h-4 w-4" /> กะ
+          </NavLink>
+          <NavLink to="/kds" className={navLinkClass}>
+            <ChefHat className="h-4 w-4" /> KDS
           </NavLink>
           {user?.role === 'admin' && (
             <>

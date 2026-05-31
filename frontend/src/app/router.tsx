@@ -6,6 +6,7 @@ import { LoginPage } from '@/features/auth/LoginPage'
 import { AdminRoute } from '@/features/auth/components/AdminRoute'
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute'
 import { DashboardPage } from '@/features/dashboard/DashboardPage'
+import { KdsPage } from '@/features/kds/KdsPage'
 import { PosPage } from '@/features/pos/PosPage'
 import { ShiftPage } from '@/features/shifts/ShiftPage'
 import { ShiftGate } from '@/features/shifts/components/ShiftGate'
@@ -20,6 +21,7 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <Navigate to="/pos" replace /> },
           { path: 'shift', element: <ShiftPage /> },
+          { path: 'kds', element: <KdsPage /> },
           {
             element: <ShiftGate />,
             children: [{ path: 'pos', element: <PosPage /> }],
