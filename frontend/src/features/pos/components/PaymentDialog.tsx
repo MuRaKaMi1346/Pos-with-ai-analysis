@@ -11,13 +11,18 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Keypad } from '@/components/ui/keypad'
+import { ReceiptPreview } from '@/features/pos/components/ReceiptPreview'
+import { ReceiptPrintLayer } from '@/features/pos/components/ReceiptPrintLayer'
 import { addTender, canSubmit, changeDue, paidTotal, remaining } from '@/features/pos/lib/payment'
 import { cn, formatCurrency } from '@/lib/utils'
 import type { PaymentMethod, TenderInput } from '@/types/payment'
+import type { Receipt } from '@/types/receipt'
 
 export interface PaymentResult {
   orderNumber: string
   changeDue: number
+  /** Receipt for the preview + print (null if the fetch failed). */
+  receipt: Receipt | null
 }
 
 interface PaymentDialogProps {
@@ -299,33 +304,47 @@ function PaymentSuccess({
   onDone: () => void
 }) {
   return (
-    <DialogContent className="flex w-full max-w-md flex-col items-center gap-4 text-center">
-      <span className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-green-600">
-        <Check className="h-8 w-8" />
-      </span>
-      <div className="flex flex-col gap-1">
-        <DialogTitle className="text-lg font-semibold text-stone-900">ชำระเงินสำเร็จ</DialogTitle>
-        <DialogDescription className="text-sm tabular-nums text-stone-500">
-          บิล {result.orderNumber} · {formatCurrency(total)}
-        </DialogDescription>
-      </div>
-      {result.changeDue > 0 && (
-        <div className="w-full rounded-lg bg-amber-50 py-3">
-          <p className="text-xs uppercase tracking-wide text-amber-700">เงินทอน</p>
-          <p className="text-3xl font-bold tabular-nums text-amber-800">
-            {formatCurrency(result.changeDue)}
-          </p>
+    <>
+      <DialogContent className="flex max-h-[90vh] w-full max-w-md flex-col items-center gap-4 overflow-y-auto text-center">
+        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-green-600">
+          <Check className="h-8 w-8" />
+        </span>
+        <div className="flex flex-col gap-1">
+          <DialogTitle className="text-lg font-semibold text-stone-900">ชำระเงินสำเร็จ</DialogTitle>
+          <DialogDescription className="text-sm tabular-nums text-stone-500">
+            บิล {result.orderNumber} · {formatCurrency(total)}
+          </DialogDescription>
         </div>
-      )}
-      <div className="grid w-full grid-cols-3 gap-2">
-        <Button variant="outline" disabled title="ใบเสร็จ (เร็ว ๆ นี้ — M16)">
-          พิมพ์
-        </Button>
-        <Button variant="outline" disabled title="อีเมลใบเสร็จ (เร็ว ๆ นี้ — M16)">
-          อีเมล
-        </Button>
-        <Button onClick={onDone}>ขายใหม่</Button>
-      </div>
-    </DialogContent>
+        {result.changeDue > 0 && (
+          <div className="w-full rounded-lg bg-amber-50 py-3">
+            <p className="text-xs uppercase tracking-wide text-amber-700">เงินทอน</p>
+            <p className="text-3xl font-bold tabular-nums text-amber-800">
+              {formatCurrency(result.changeDue)}
+            </p>
+          </div>
+        )}
+        {result.receipt && (
+          <div className="w-full overflow-y-auto rounded-lg border border-stone-200 p-3">
+            <ReceiptPreview receipt={result.receipt} />
+          </div>
+        )}
+        <div className="grid w-full grid-cols-3 gap-2">
+          <Button
+            variant="outline"
+            disabled={!result.receipt}
+            onClick={() => {
+              window.print()
+            }}
+          >
+            พิมพ์
+          </Button>
+          <Button variant="outline" disabled title="อีเมลใบเสร็จ (เร็ว ๆ นี้)">
+            อีเมล
+          </Button>
+          <Button onClick={onDone}>ขายใหม่</Button>
+        </div>
+      </DialogContent>
+      {result.receipt && <ReceiptPrintLayer receipt={result.receipt} />}
+    </>
   )
 }

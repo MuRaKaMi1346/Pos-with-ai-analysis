@@ -24,3 +24,20 @@ body,
   background-color: #f8fafc;
   color: #0f172a;
 }
+
+/* Receipt printing (M16): hide the app + any dialog portal and show only the
+   body-level receipt copy (ReceiptPrintLayer), so window.print() emits just
+   the 80mm receipt. */
+.receipt-print {
+  display: none;
+}
+
+@media print {
+  body > * {
+    display: none !important;
+  }
+  body > .receipt-print {
+    display: block !important;
+    width: 80mm;
+  }
+}

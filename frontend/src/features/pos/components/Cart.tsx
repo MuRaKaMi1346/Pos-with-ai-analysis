@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { useCreateOrder, useHoldOrder, usePayOrder } from '@/features/pos/api/products'
+import { fetchReceipt } from '@/features/pos/api/receipts'
 import { useSettings } from '@/features/pos/api/settings'
 import { CartLineSheet } from '@/features/pos/components/CartLineSheet'
 import { ModifierDialog } from '@/features/pos/components/ModifierDialog'
@@ -71,7 +72,8 @@ export function Cart() {
       tenders,
       idempotencyKey: paymentKey,
     })
-    return { orderNumber: paid.order_number, changeDue: Number(paid.change_due) }
+    const receipt = await fetchReceipt(order.id)
+    return { orderNumber: paid.order_number, changeDue: Number(paid.change_due), receipt }
   }
 
   function handlePaymentDone(): void {

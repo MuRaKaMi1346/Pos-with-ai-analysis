@@ -10,6 +10,7 @@ import type { Product } from '@/types/product'
 import type { Settings } from '@/types/settings'
 
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
+vi.mock('@/features/pos/api/receipts', () => ({ fetchReceipt: vi.fn().mockResolvedValue(null) }))
 vi.mock('@/features/pos/api/settings', () => ({ useSettings: vi.fn() }))
 vi.mock('@/features/pos/api/products', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/features/pos/api/products')>()
