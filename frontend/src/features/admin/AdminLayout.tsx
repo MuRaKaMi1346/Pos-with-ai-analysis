@@ -1,4 +1,4 @@
-import { Boxes, NotebookText, Warehouse } from 'lucide-react'
+import { BadgePercent, Boxes, NotebookText, Warehouse } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 
@@ -15,6 +15,7 @@ const SECTIONS: Section[] = [
   { to: '/admin/ingredients', label: 'วัตถุดิบ', icon: <Boxes className="h-4 w-4" /> },
   { to: '/admin/recipes', label: 'สูตร (BOM)', icon: <NotebookText className="h-4 w-4" /> },
   { to: '/admin/inventory', label: 'คลังสต็อก', icon: <Warehouse className="h-4 w-4" /> },
+  { to: '/admin/discounts', label: 'ส่วนลด', icon: <BadgePercent className="h-4 w-4" /> },
 ]
 
 /** Shell for the admin / back-office area: a section sub-nav above a scroll region. */
