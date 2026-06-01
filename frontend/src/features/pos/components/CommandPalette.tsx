@@ -71,8 +71,8 @@ function CommandPaletteBody({
       <DialogDescription className="sr-only">
         พิมพ์ชื่อเมนูหรือสแกนบาร์โค้ดแล้วกด Enter
       </DialogDescription>
-      <div className="flex items-center gap-2 border-b border-stone-200 px-4">
-        <Search className="h-4 w-4 shrink-0 text-stone-400" />
+      <div className="flex items-center gap-2 border-b border-border px-4">
+        <Search className="h-4 w-4 shrink-0 text-text-muted" />
         <input
           value={query}
           onChange={(e) => {
@@ -91,7 +91,7 @@ function CommandPaletteBody({
       </div>
       <ul className="max-h-80 overflow-y-auto p-2">
         {matches.length === 0 ? (
-          <li className="px-3 py-6 text-center text-sm text-stone-400">ไม่พบเมนู</li>
+          <li className="px-3 py-6 text-center text-sm text-text-muted">ไม่พบเมนู</li>
         ) : (
           matches.map((product) => (
             <li key={product.id}>
@@ -100,10 +100,10 @@ function CommandPaletteBody({
                 onClick={() => {
                   onSelect(product)
                 }}
-                className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-stone-100"
+                className="flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-surface-2"
               >
-                <span className="truncate font-medium text-stone-800">{product.name}</span>
-                <span className="shrink-0 tabular-nums text-stone-500">
+                <span className="truncate font-medium text-text">{product.name}</span>
+                <span className="shrink-0 tabular-nums text-text-muted">
                   {formatCurrency(product.price)}
                 </span>
               </button>

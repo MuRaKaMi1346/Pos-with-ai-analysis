@@ -36,25 +36,25 @@ export function HeldTicketsDrawer({
           </SheetHeader>
           <div className="min-h-0 flex-1 overflow-y-auto">
             {isPending ? (
-              <p className="py-8 text-center text-sm text-stone-500">กำลังโหลด…</p>
+              <p className="py-8 text-center text-sm text-text-muted">กำลังโหลด…</p>
             ) : orders.length === 0 ? (
-              <p className="py-8 text-center text-sm text-stone-400">ไม่มีบิลที่พักไว้</p>
+              <p className="py-8 text-center text-sm text-text-muted">ไม่มีบิลที่พักไว้</p>
             ) : (
               <ul className="flex flex-col gap-2">
                 {orders.map((order) => (
-                  <li key={order.id} className="rounded-lg border border-stone-200 p-3">
+                  <li key={order.id} className="rounded-lg border border-border p-3">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="font-semibold tabular-nums text-stone-800">
+                        <p className="font-semibold tabular-nums text-text">
                           {order.order_number}
                         </p>
-                        <p className="text-xs text-stone-500">
+                        <p className="text-xs text-text-muted">
                           {CHANNEL_LABEL[order.channel]}
                           {order.table_number ? ` · โต๊ะ ${order.table_number}` : ''} ·{' '}
                           {formatAge(order.created_at)}
                         </p>
                       </div>
-                      <span className="shrink-0 font-semibold tabular-nums text-stone-900">
+                      <span className="shrink-0 font-semibold tabular-nums text-text">
                         {formatCurrency(order.total)}
                       </span>
                     </div>

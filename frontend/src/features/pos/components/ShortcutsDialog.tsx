@@ -35,8 +35,8 @@ export function ShortcutsDialog({
           <ul className="flex flex-col gap-1 text-sm">
             {SHORTCUTS.map((s) => (
               <li key={s.keys} className="flex items-center justify-between gap-3 py-1">
-                <span className="text-stone-600">{s.action}</span>
-                <kbd className="rounded border border-stone-300 bg-stone-100 px-2 py-0.5 font-mono text-xs text-stone-700">
+                <span className="text-text-muted">{s.action}</span>
+                <kbd className="rounded border border-border bg-surface-2 px-2 py-0.5 font-mono text-xs text-text">
                   {s.keys}
                 </kbd>
               </li>

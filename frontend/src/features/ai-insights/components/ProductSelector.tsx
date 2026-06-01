@@ -14,7 +14,7 @@ export function ProductSelector({
       <Label htmlFor="ai-product-select">เลือกเมนู</Label>
       <select
         id="ai-product-select"
-        className="h-10 w-64 rounded-md border border-slate-300 bg-white px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
+        className="h-10 w-64 rounded-md border border-border bg-input px-3 text-sm text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         value={value ?? ''}
         onChange={(e) => {
           const raw = e.target.value

@@ -32,31 +32,48 @@ export function ForecastChart({
       </CardHeader>
       <CardContent>
         {isEmpty ? (
-          <div className="flex h-[280px] items-center justify-center text-slate-500">
+          <div className="flex h-[280px] items-center justify-center text-text-muted">
             เลือกเมนูเพื่อดูพยากรณ์
           </div>
         ) : isLoading ? (
-          <div className="flex h-[280px] items-center justify-center text-slate-500">
+          <div className="flex h-[280px] items-center justify-center text-text-muted">
             กำลังโหลด…
           </div>
         ) : points.length === 0 ? (
-          <div className="flex h-[280px] items-center justify-center text-slate-500">
+          <div className="flex h-[280px] items-center justify-center text-text-muted">
             ยังไม่มีโมเดล — กด <span className="px-1 font-medium">เทรนโมเดล</span> ก่อน
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={280}>
             <LineChart data={points} margin={{ left: 0, right: 16, top: 8, bottom: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} width={56} />
-              <Tooltip contentStyle={{ borderRadius: 8, borderColor: '#cbd5e1' }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+              <XAxis
+                dataKey="date"
+                tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                tick={{ fontSize: 11, fill: 'var(--color-text-muted)' }}
+                width={56}
+                tickLine={false}
+                axisLine={false}
+              />
+              <Tooltip
+                contentStyle={{
+                  borderRadius: 12,
+                  border: '1px solid var(--color-border)',
+                  background: 'var(--color-surface)',
+                  color: 'var(--color-text)',
+                }}
+              />
               <Line
                 type="monotone"
                 dataKey="qty"
-                stroke="#10b981"
-                strokeWidth={2}
-                dot={{ r: 3 }}
-                activeDot={{ r: 5 }}
+                stroke="var(--color-chart-3)"
+                strokeWidth={2.5}
+                dot={{ r: 3, strokeWidth: 0 }}
+                activeDot={{ r: 5, strokeWidth: 0 }}
               />
             </LineChart>
           </ResponsiveContainer>

@@ -14,9 +14,9 @@ export function ShiftPage() {
   const [closed, setClosed] = useState<Shift | null>(null)
 
   return (
-    <div className="mx-auto mt-10 w-full max-w-md rounded-xl border border-stone-200 bg-white p-6 shadow-sm">
+    <div className="mx-auto mt-10 w-full max-w-md rounded-xl border border-border bg-surface p-6 shadow-sm">
       {isPending ? (
-        <p className="py-8 text-center text-sm text-stone-500">กำลังโหลด…</p>
+        <p className="py-8 text-center text-sm text-text-muted">กำลังโหลด…</p>
       ) : closed ? (
         <ClosedShiftSummary
           shift={closed}

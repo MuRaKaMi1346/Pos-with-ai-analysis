@@ -70,20 +70,20 @@ interface KdsColumnProps {
 function KdsColumn({ title, tickets, now, isPending, isError, onBump, onRecall }: KdsColumnProps) {
   const activeCount = tickets.filter((t) => t.status !== 'done').length
   return (
-    <section className="flex min-w-0 flex-1 flex-col rounded-xl border border-stone-200 bg-stone-50">
-      <header className="flex items-center justify-between border-b border-stone-200 px-4 py-2">
-        <h2 className="font-semibold text-stone-800">{title}</h2>
-        <span className="rounded-full bg-stone-200 px-2 py-0.5 text-xs tabular-nums text-stone-600">
+    <section className="flex min-w-0 flex-1 flex-col rounded-xl border border-border bg-surface-2">
+      <header className="flex items-center justify-between border-b border-border px-4 py-2">
+        <h2 className="font-semibold text-text">{title}</h2>
+        <span className="rounded-full bg-border px-2 py-0.5 text-xs tabular-nums text-text-muted">
           {activeCount}
         </span>
       </header>
       <div className="flex-1 overflow-y-auto p-3">
         {isPending ? (
-          <p className="py-8 text-center text-sm text-stone-500">กำลังโหลด…</p>
+          <p className="py-8 text-center text-sm text-text-muted">กำลังโหลด…</p>
         ) : isError ? (
           <p className="py-8 text-center text-sm text-red-600">โหลดคิวไม่สำเร็จ</p>
         ) : tickets.length === 0 ? (
-          <p className="py-8 text-center text-sm text-stone-400">ไม่มีรายการ</p>
+          <p className="py-8 text-center text-sm text-text-muted">ไม่มีรายการ</p>
         ) : (
           <div className="flex flex-col gap-2">
             {tickets.map((ticket) => (

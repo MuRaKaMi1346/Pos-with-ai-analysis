@@ -16,16 +16,16 @@ export function PurchaseSuggestionTable({
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <p className="text-slate-500">กำลังคำนวณ…</p>
+          <p className="text-text-muted">กำลังคำนวณ…</p>
         ) : rows.length === 0 ? (
-          <p className="text-slate-500">
+          <p className="text-text-muted">
             ยังไม่มีข้อมูล — ต้องเทรนโมเดลก่อน หรือยังไม่มีสูตรสำหรับเมนู
           </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-200 text-left text-xs uppercase text-slate-500">
+                <tr className="border-b border-border text-left text-xs uppercase text-text-muted">
                   <th className="py-2">วัตถุดิบ</th>
                   <th className="py-2 text-right">คงเหลือ</th>
                   <th className="py-2 text-right">ต้องการ</th>
@@ -36,16 +36,16 @@ export function PurchaseSuggestionTable({
                 {rows.map((r) => (
                   <tr
                     key={r.ingredient_id}
-                    className="border-b border-slate-100 last:border-0"
+                    className="border-b border-border last:border-0"
                   >
                     <td className="py-2 font-medium">{r.ingredient_name}</td>
-                    <td className="py-2 text-right text-slate-500">
+                    <td className="py-2 text-right text-text-muted">
                       {r.current_stock} {r.unit}
                     </td>
                     <td className="py-2 text-right">
                       {r.forecast_required} {r.unit}
                     </td>
-                    <td className="py-2 text-right font-semibold text-amber-700">
+                    <td className="py-2 text-right font-semibold text-primary">
                       {r.suggested_order_qty} {r.unit}
                     </td>
                   </tr>

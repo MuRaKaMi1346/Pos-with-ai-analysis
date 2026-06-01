@@ -18,13 +18,13 @@ export function ModifierPicker({ groups, selectedIds, onToggle }: ModifierPicker
         return (
           <fieldset key={group.id} className="flex flex-col gap-2">
             <legend className="mb-1 flex w-full items-center justify-between">
-              <span className="text-sm font-semibold text-stone-800">{group.name}</span>
+              <span className="text-sm font-semibold text-text">{group.name}</span>
               {group.is_required ? (
-                <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
+                <span className="rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-medium text-primary">
                   จำเป็น
                 </span>
               ) : (
-                <span className="text-[10px] text-stone-400">
+                <span className="text-[10px] text-text-muted">
                   {isMulti ? `เลือกได้ถึง ${group.max_select}` : 'เลือกได้ 1'}
                 </span>
               )}
@@ -46,14 +46,14 @@ export function ModifierPicker({ groups, selectedIds, onToggle }: ModifierPicker
                     className={cn(
                       'flex items-center justify-between gap-2 rounded-lg border px-3 py-2.5 text-left text-sm transition-colors',
                       selected
-                        ? 'border-amber-400 bg-amber-50 text-amber-900 ring-1 ring-amber-300'
-                        : 'border-stone-200 hover:border-stone-300 hover:bg-stone-50',
+                        ? 'border-primary/50 bg-primary/10 text-text ring-1 ring-primary/40'
+                        : 'border-border hover:border-text-muted hover:bg-surface-2',
                       disabled && 'cursor-not-allowed opacity-40',
                     )}
                   >
                     <span className="truncate">{m.name}</span>
                     {Number(m.price_delta) > 0 && (
-                      <span className="shrink-0 text-xs tabular-nums text-stone-500">
+                      <span className="shrink-0 text-xs tabular-nums text-text-muted">
                         +{formatCurrency(m.price_delta)}
                       </span>
                     )}

@@ -44,7 +44,7 @@ export function AiInsightsPage() {
           <h1 className="flex items-center gap-2 text-2xl font-semibold">
             <Brain className="h-6 w-6 text-purple-600" /> AI Insights
           </h1>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-text-muted">
             พยากรณ์ยอดขาย · แนะนำสั่งวัตถุดิบ · กลยุทธ์ภาษาไทยจาก Ollama
           </p>
         </div>

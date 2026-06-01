@@ -36,15 +36,15 @@ export function CloseShiftForm({
   return (
     <div className="flex flex-col gap-4">
       <div className="text-center">
-        <h1 className="text-lg font-semibold text-stone-900">ปิดกะการขาย</h1>
-        <p className="text-sm text-stone-500">นับเงินสดในลิ้นชักแล้วกรอกจำนวนที่นับได้</p>
+        <h1 className="text-lg font-semibold text-text">ปิดกะการขาย</h1>
+        <p className="text-sm text-text-muted">นับเงินสดในลิ้นชักแล้วกรอกจำนวนที่นับได้</p>
       </div>
-      <div className="flex items-center justify-between rounded-lg bg-stone-100 px-3 py-2 text-sm">
-        <span className="text-stone-500">เงินตั้งต้น</span>
+      <div className="flex items-center justify-between rounded-lg bg-surface-2 px-3 py-2 text-sm">
+        <span className="text-text-muted">เงินตั้งต้น</span>
         <span className="font-semibold tabular-nums">{formatCurrency(shift.opening_float)}</span>
       </div>
       <label className="flex flex-col gap-1 text-sm">
-        <span className="font-medium text-stone-600">เงินสดที่นับได้ (บาท)</span>
+        <span className="font-medium text-text-muted">เงินสดที่นับได้ (บาท)</span>
         <input
           type="number"
           inputMode="decimal"
@@ -54,11 +54,11 @@ export function CloseShiftForm({
             setCounted(e.target.value)
           }}
           aria-label="เงินสดที่นับได้"
-          className="h-11 rounded-lg border border-stone-300 px-3 text-right text-lg tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+          className="h-11 rounded-lg border border-border px-3 text-right text-lg tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         />
       </label>
       <label className="flex flex-col gap-1 text-sm">
-        <span className="font-medium text-stone-600">หมายเหตุ (ไม่บังคับ)</span>
+        <span className="font-medium text-text-muted">หมายเหตุ (ไม่บังคับ)</span>
         <textarea
           value={note}
           onChange={(e) => {
@@ -67,7 +67,7 @@ export function CloseShiftForm({
           rows={2}
           maxLength={255}
           aria-label="หมายเหตุปิดกะ"
-          className="rounded-lg border border-stone-300 p-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+          className="rounded-lg border border-border p-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         />
       </label>
       <Button

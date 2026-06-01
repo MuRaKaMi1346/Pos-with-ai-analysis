@@ -31,9 +31,9 @@ export function KdsTicketCard({ ticket, now, onBump, onRecall }: KdsTicketCardPr
 
   const header = (
     <div className="flex items-baseline justify-between gap-2">
-      <span className="font-semibold tabular-nums text-stone-800">{ticket.order_number}</span>
+      <span className="font-semibold tabular-nums text-text">{ticket.order_number}</span>
       <span className="flex items-center gap-2 text-xs">
-        {ticket.table_number && <span className="text-stone-500">โต๊ะ {ticket.table_number}</span>}
+        {ticket.table_number && <span className="text-text-muted">โต๊ะ {ticket.table_number}</span>}
         <span className={cn('font-medium tabular-nums', AGE_TEXT[level])}>{minutes} นาที</span>
       </span>
     </div>
@@ -44,11 +44,11 @@ export function KdsTicketCard({ ticket, now, onBump, onRecall }: KdsTicketCardPr
       {ticket.lines.map((line) => (
         <li key={line.order_item_id} className="text-sm">
           <div className="flex gap-2">
-            <span className="font-semibold tabular-nums text-stone-500">{line.qty}×</span>
-            <span className="text-stone-800">{line.product_name}</span>
+            <span className="font-semibold tabular-nums text-text-muted">{line.qty}×</span>
+            <span className="text-text">{line.product_name}</span>
           </div>
           {line.modifiers.length > 0 && (
-            <p className="pl-6 text-xs text-stone-500">{line.modifiers.join(', ')}</p>
+            <p className="pl-6 text-xs text-text-muted">{line.modifiers.join(', ')}</p>
           )}
         </li>
       ))}
@@ -57,7 +57,7 @@ export function KdsTicketCard({ ticket, now, onBump, onRecall }: KdsTicketCardPr
 
   if (isDone) {
     return (
-      <div className="rounded-lg border border-stone-200 bg-stone-50 p-3 opacity-60">
+      <div className="rounded-lg border border-border bg-surface-2 p-3 opacity-60">
         {header}
         {lines}
         <Button
@@ -82,13 +82,13 @@ export function KdsTicketCard({ ticket, now, onBump, onRecall }: KdsTicketCardPr
       }}
       aria-label={`เสร็จ ${ticket.order_number}`}
       className={cn(
-        'w-full rounded-lg border border-l-4 border-stone-200 bg-white p-3 text-left shadow-sm transition-colors hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500',
+        'w-full rounded-lg border border-l-4 border-border bg-surface p-3 text-left shadow-sm transition-colors hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
         BORDER[level],
       )}
     >
       {header}
       {lines}
-      <p className="mt-2 text-center text-xs font-medium text-stone-400">แตะเมื่อเสร็จ</p>
+      <p className="mt-2 text-center text-xs font-medium text-text-muted">แตะเมื่อเสร็จ</p>
     </button>
   )
 }

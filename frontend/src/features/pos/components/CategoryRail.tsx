@@ -35,7 +35,7 @@ export function CategoryRail({
     <nav
       aria-label="หมวดหมู่"
       onKeyDown={handleKeyDown}
-      className="flex w-56 shrink-0 flex-col gap-1 overflow-y-auto border-r border-stone-200 bg-white p-3"
+      className="flex w-56 shrink-0 flex-col gap-1 overflow-y-auto border-r border-border bg-surface p-3"
     >
       <RailItem
         icon={<LayoutGrid className="h-5 w-5" />}
@@ -89,14 +89,14 @@ function RailItem({
       className={cn(
         'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors',
         active
-          ? 'bg-amber-500/15 text-amber-900 ring-1 ring-amber-300'
-          : 'text-stone-600 hover:bg-stone-100',
+          ? 'bg-primary/15 text-primary ring-1 ring-primary/40'
+          : 'text-text-muted hover:bg-surface-2',
       )}
     >
       <span
         className={cn(
           'shrink-0',
-          active ? 'text-amber-600' : 'text-stone-400 group-hover:text-stone-600',
+          active ? 'text-primary' : 'text-text-muted group-hover:text-text',
         )}
       >
         {icon}
@@ -105,7 +105,7 @@ function RailItem({
       <span
         className={cn(
           'rounded-full px-2 py-0.5 text-xs tabular-nums',
-          active ? 'bg-amber-500/20 text-amber-800' : 'bg-stone-100 text-stone-500',
+          active ? 'bg-primary/20 text-primary' : 'bg-surface-2 text-text-muted',
         )}
       >
         {count}

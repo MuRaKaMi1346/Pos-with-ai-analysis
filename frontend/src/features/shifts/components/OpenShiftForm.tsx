@@ -25,14 +25,14 @@ export function OpenShiftForm({ onOpened }: { onOpened: () => void }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col items-center gap-2 text-center">
-        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/15 text-primary">
           <Wallet className="h-6 w-6" />
         </span>
-        <h1 className="text-lg font-semibold text-stone-900">เปิดกะการขาย</h1>
-        <p className="text-sm text-stone-500">ใส่จำนวนเงินทอนตั้งต้นในลิ้นชักเพื่อเริ่มกะ</p>
+        <h1 className="text-lg font-semibold text-text">เปิดกะการขาย</h1>
+        <p className="text-sm text-text-muted">ใส่จำนวนเงินทอนตั้งต้นในลิ้นชักเพื่อเริ่มกะ</p>
       </div>
       <label className="flex flex-col gap-1 text-sm">
-        <span className="font-medium text-stone-600">เงินตั้งต้น (บาท)</span>
+        <span className="font-medium text-text-muted">เงินตั้งต้น (บาท)</span>
         <input
           type="number"
           inputMode="decimal"
@@ -42,7 +42,7 @@ export function OpenShiftForm({ onOpened }: { onOpened: () => void }) {
             setFloat(e.target.value)
           }}
           aria-label="เงินตั้งต้น"
-          className="h-11 rounded-lg border border-stone-300 px-3 text-right text-lg tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+          className="h-11 rounded-lg border border-border px-3 text-right text-lg tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         />
       </label>
       <Button

@@ -8,7 +8,7 @@ export function ShiftGate() {
   const { data: shift, isPending } = useCurrentShift()
   if (isPending) {
     return (
-      <div className="flex h-full items-center justify-center text-sm text-stone-500">
+      <div className="flex h-full items-center justify-center text-sm text-text-muted">
         กำลังตรวจสอบกะ…
       </div>
     )

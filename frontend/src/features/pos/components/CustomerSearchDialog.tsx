@@ -64,10 +64,10 @@ function CustomerSearchBody({
       </DialogHeader>
 
       {customer && (
-        <div className="flex items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+        <div className="flex items-center justify-between gap-2 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2">
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-amber-900">{customer.name}</p>
-            <p className="flex items-center gap-1 text-xs text-amber-700">
+            <p className="truncate text-sm font-semibold text-text">{customer.name}</p>
+            <p className="flex items-center gap-1 text-xs text-primary">
               <Star className="h-3 w-3 fill-current" />
               {customer.loyalty_points} แต้ม
             </p>
@@ -85,7 +85,7 @@ function CustomerSearchBody({
       )}
 
       <div className="relative">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
         <input
           value={query}
           onChange={(e) => {
@@ -93,7 +93,7 @@ function CustomerSearchBody({
           }}
           placeholder="ค้นหาด้วยชื่อ / เบอร์โทร"
           aria-label="ค้นหาลูกค้า"
-          className="h-11 w-full rounded-lg border border-stone-300 pl-10 pr-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+          className="h-11 w-full rounded-lg border border-border pl-10 pr-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         />
       </div>
 
@@ -103,12 +103,12 @@ function CustomerSearchBody({
           onClick={() => {
             onAttach(null)
           }}
-          className="w-full rounded-lg px-3 py-2 text-left text-sm text-stone-600 hover:bg-stone-100"
+          className="w-full rounded-lg px-3 py-2 text-left text-sm text-text-muted hover:bg-surface-2"
         >
           ลูกค้าทั่วไป (Walk-in)
         </button>
         {isPending ? (
-          <p className="py-6 text-center text-sm text-stone-400">กำลังค้นหา…</p>
+          <p className="py-6 text-center text-sm text-text-muted">กำลังค้นหา…</p>
         ) : results && results.length > 0 ? (
           <ul>
             {results.map((c) => (
@@ -119,15 +119,15 @@ function CustomerSearchBody({
                     onAttach(c)
                   }}
                   className={cn(
-                    'flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-stone-100',
-                    customer?.id === c.id && 'bg-amber-50',
+                    'flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-surface-2',
+                    customer?.id === c.id && 'bg-primary/15',
                   )}
                 >
                   <span className="min-w-0">
-                    <span className="block truncate font-medium text-stone-800">{c.name}</span>
-                    {c.phone && <span className="block text-xs text-stone-500">{c.phone}</span>}
+                    <span className="block truncate font-medium text-text">{c.name}</span>
+                    {c.phone && <span className="block text-xs text-text-muted">{c.phone}</span>}
                   </span>
-                  <span className="flex shrink-0 items-center gap-1 text-xs tabular-nums text-stone-500">
+                  <span className="flex shrink-0 items-center gap-1 text-xs tabular-nums text-text-muted">
                     <Star className="h-3 w-3 fill-current" />
                     {c.loyalty_points}
                   </span>
@@ -136,7 +136,7 @@ function CustomerSearchBody({
             ))}
           </ul>
         ) : query ? (
-          <p className="py-6 text-center text-sm text-stone-400">ไม่พบลูกค้า</p>
+          <p className="py-6 text-center text-sm text-text-muted">ไม่พบลูกค้า</p>
         ) : null}
       </div>
 
@@ -190,10 +190,10 @@ function NewCustomerForm({
   }
 
   const inputClass =
-    'h-10 rounded-lg border border-stone-300 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500'
+    'h-10 rounded-lg border border-border px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary'
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-stone-200 p-3">
+    <div className="flex flex-col gap-2 rounded-lg border border-border p-3">
       <input
         value={name}
         onChange={(e) => {

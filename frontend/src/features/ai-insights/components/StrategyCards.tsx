@@ -12,7 +12,7 @@ const ICONS: Record<string, ReactNode> = {
 }
 
 function iconFor(type: string): ReactNode {
-  return ICONS[type] ?? <Lightbulb className="h-5 w-5 text-slate-500" />
+  return ICONS[type] ?? <Lightbulb className="h-5 w-5 text-text-muted" />
 }
 
 export function StrategyCards({
@@ -23,24 +23,22 @@ export function StrategyCards({
   isLoading: boolean
 }) {
   if (isLoading) {
-    return <p className="text-slate-500">กำลังโหลด insights…</p>
+    return <p className="text-text-muted">กำลังโหลด insights…</p>
   }
   if (!data) return null
 
   return (
     <div className="space-y-4">
       {data.summary_th && (
-        <Card className="border-amber-200 bg-amber-50">
+        <Card className="border-primary/30 bg-primary/10">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Lightbulb className="h-5 w-5 text-amber-600" /> สรุปกลยุทธ์ประจำสัปดาห์
+              <Lightbulb className="h-5 w-5 text-primary" /> สรุปกลยุทธ์ประจำสัปดาห์
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="whitespace-pre-line leading-relaxed text-slate-700">
-              {data.summary_th}
-            </p>
-            <p className="mt-2 text-xs text-slate-500">
+            <p className="whitespace-pre-line leading-relaxed text-text">{data.summary_th}</p>
+            <p className="mt-2 text-xs text-text-muted">
               ข้อมูลย้อนหลัง {data.days} วัน · สร้างเมื่อ{' '}
               {new Date(data.generated_at).toLocaleString('th-TH')}
             </p>
@@ -50,7 +48,7 @@ export function StrategyCards({
 
       {data.insights.length === 0 ? (
         <Card>
-          <CardContent className="py-10 text-center text-slate-500">
+          <CardContent className="py-10 text-center text-text-muted">
             ยังไม่มี insight — ต้องมีบิลในระบบสักช่วงเวลาก่อน
           </CardContent>
         </Card>
@@ -59,12 +57,12 @@ export function StrategyCards({
           {data.insights.map((insight, idx) => (
             <Card key={`${insight.type}-${idx}`}>
               <CardContent className="flex gap-3 p-4">
-                <div className="rounded-md bg-slate-100 p-2 flex items-start">
+                <div className="rounded-md bg-surface-2 p-2 flex items-start">
                   {iconFor(insight.type)}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="font-medium leading-snug">{insight.title}</p>
-                  <p className="mt-1 text-sm text-slate-600 leading-relaxed">
+                  <p className="mt-1 text-sm text-text-muted leading-relaxed">
                     {insight.description}
                   </p>
                 </div>

@@ -85,11 +85,11 @@ function ModifierDialogBody({ product, initial, confirmLabel, onConfirm }: BodyP
 
       <div className="min-h-0 flex-1 overflow-y-auto pr-1">
         {isPending ? (
-          <p className="py-8 text-center text-sm text-stone-500">กำลังโหลดตัวเลือก…</p>
+          <p className="py-8 text-center text-sm text-text-muted">กำลังโหลดตัวเลือก…</p>
         ) : isError ? (
           <p className="py-8 text-center text-sm text-red-600">โหลดตัวเลือกไม่สำเร็จ</p>
         ) : groups.length === 0 ? (
-          <p className="py-8 text-center text-sm text-stone-500">เมนูนี้ไม่มีตัวเลือกเพิ่มเติม</p>
+          <p className="py-8 text-center text-sm text-text-muted">เมนูนี้ไม่มีตัวเลือกเพิ่มเติม</p>
         ) : (
           <ModifierPicker
             groups={groups}
@@ -102,7 +102,7 @@ function ModifierDialogBody({ product, initial, confirmLabel, onConfirm }: BodyP
       </div>
 
       <div className="flex flex-col gap-1">
-        <label htmlFor="modifier-note" className="text-xs font-medium text-stone-500">
+        <label htmlFor="modifier-note" className="text-xs font-medium text-text-muted">
           หมายเหตุ
         </label>
         <input
@@ -113,12 +113,12 @@ function ModifierDialogBody({ product, initial, confirmLabel, onConfirm }: BodyP
           }}
           maxLength={255}
           placeholder="เช่น ไม่ใส่น้ำแข็ง"
-          className="h-10 w-full rounded-lg border border-stone-300 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+          className="h-10 w-full rounded-lg border border-border bg-input px-3 text-sm text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         />
       </div>
 
       <DialogFooter className="sm:items-center sm:justify-between">
-        <span className="text-lg font-semibold tabular-nums text-stone-900">
+        <span className="text-lg font-semibold tabular-nums text-text">
           {formatCurrency(runningPrice)}
         </span>
         <Button

@@ -114,14 +114,14 @@ function PaymentDialogBody({
         <DialogDescription className="sr-only">เลือกวิธีชำระและเพิ่มยอดจนครบ</DialogDescription>
       </DialogHeader>
 
-      <div className="grid grid-cols-3 gap-2 rounded-lg bg-stone-100 p-3 text-center">
+      <div className="grid grid-cols-3 gap-2 rounded-lg bg-surface-2 p-3 text-center">
         <Summary label="ยอดที่ต้องชำระ" value={formatCurrency(total)} />
         <Summary label="คงเหลือ" value={formatCurrency(left)} strong={left > 0} />
         <Summary label="เงินทอน" value={formatCurrency(change)} muted={change === 0} />
       </div>
 
       <div
-        className="flex gap-1 rounded-lg bg-stone-100 p-1"
+        className="flex gap-1 rounded-lg bg-surface-2 p-1"
         role="group"
         aria-label="วิธีชำระเงิน"
       >
@@ -136,8 +136,8 @@ function PaymentDialogBody({
             className={cn(
               'flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors',
               method === m.value
-                ? 'bg-white text-stone-900 shadow-sm'
-                : 'text-stone-500 hover:text-stone-700',
+                ? 'bg-surface text-text shadow-sm'
+                : 'text-text-muted hover:text-text',
             )}
           >
             {m.label}
@@ -149,7 +149,7 @@ function PaymentDialogBody({
         {method === 'cash' ? (
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-2">
-              <div className="rounded-lg border border-stone-200 px-3 py-2 text-right text-2xl font-semibold tabular-nums">
+              <div className="rounded-lg border border-border px-3 py-2 text-right text-2xl font-semibold tabular-nums">
                 ฿{entry || '0'}
               </div>
               <div className="grid grid-cols-2 gap-2">
@@ -160,7 +160,7 @@ function PaymentDialogBody({
                     onClick={() => {
                       setEntry(String(c))
                     }}
-                    className="rounded-lg border border-stone-200 py-2 text-sm font-medium hover:bg-stone-50"
+                    className="rounded-lg border border-border py-2 text-sm font-medium hover:bg-surface-2"
                   >
                     ฿{c.toLocaleString()}
                   </button>
@@ -170,7 +170,7 @@ function PaymentDialogBody({
                   onClick={() => {
                     setEntry(left > 0 ? String(left) : '')
                   }}
-                  className="rounded-lg border border-amber-300 bg-amber-50 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100"
+                  className="rounded-lg border border-primary/40 bg-primary/10 py-2 text-sm font-medium text-primary hover:bg-primary/20"
                 >
                   พอดี
                 </button>
@@ -181,16 +181,16 @@ function PaymentDialogBody({
         ) : (
           <div className="flex flex-col gap-3">
             {method === 'qr_promptpay' && (
-              <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-stone-300 py-6 text-center">
-                <QrCode className="h-12 w-12 text-stone-300" />
-                <p className="px-4 text-xs text-stone-500">
+              <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-border py-6 text-center">
+                <QrCode className="h-12 w-12 text-text-muted" />
+                <p className="px-4 text-xs text-text-muted">
                   QR พร้อมเพย์จะแสดงเมื่อตั้งค่า PromptPay ID ของร้าน — ยืนยันสลิปแล้วกด
                   “ทำเครื่องหมายว่าชำระแล้ว”
                 </p>
               </div>
             )}
             <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-stone-600">จำนวนเงิน</span>
+              <span className="font-medium text-text-muted">จำนวนเงิน</span>
               <input
                 type="number"
                 inputMode="decimal"
@@ -198,11 +198,11 @@ function PaymentDialogBody({
                 onChange={(e) => {
                   setEntry(e.target.value)
                 }}
-                className="h-11 rounded-lg border border-stone-300 px-3 text-right text-lg tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+                className="h-11 rounded-lg border border-border px-3 text-right text-lg tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               />
             </label>
             <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium text-stone-600">
+              <span className="font-medium text-text-muted">
                 {method === 'card'
                   ? 'เลขท้ายบัตร 4 หลัก'
                   : method === 'qr_promptpay'
@@ -216,7 +216,7 @@ function PaymentDialogBody({
                   setReference(e.target.value)
                 }}
                 maxLength={100}
-                className="h-11 rounded-lg border border-stone-300 px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+                className="h-11 rounded-lg border border-border px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               />
             </label>
           </div>
@@ -232,11 +232,11 @@ function PaymentDialogBody({
           {tenders.map((t, i) => (
             <li
               key={i}
-              className="flex items-center justify-between rounded-lg border border-stone-100 bg-stone-50 px-3 py-2 text-sm"
+              className="flex items-center justify-between rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm"
             >
-              <span className="font-medium text-stone-700">
+              <span className="font-medium text-text">
                 {METHOD_LABEL[t.method]}
-                {t.reference && <span className="text-stone-400"> · {t.reference}</span>}
+                {t.reference && <span className="text-text-muted"> · {t.reference}</span>}
               </span>
               <span className="flex items-center gap-2">
                 <span className="tabular-nums">{formatCurrency(t.amount)}</span>
@@ -246,7 +246,7 @@ function PaymentDialogBody({
                   onClick={() => {
                     setTenders((prev) => prev.filter((_, idx) => idx !== i))
                   }}
-                  className="text-stone-400 hover:text-red-600"
+                  className="text-text-muted hover:text-red-600"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -281,11 +281,11 @@ function Summary({
 }) {
   return (
     <div className="flex flex-col">
-      <span className="text-[11px] uppercase tracking-wide text-stone-400">{label}</span>
+      <span className="text-[11px] uppercase tracking-wide text-text-muted">{label}</span>
       <span
         className={cn(
           'text-lg font-semibold tabular-nums',
-          strong ? 'text-amber-700' : muted ? 'text-stone-400' : 'text-stone-900',
+          strong ? 'text-primary' : muted ? 'text-text-muted' : 'text-text',
         )}
       >
         {value}
@@ -306,25 +306,25 @@ function PaymentSuccess({
   return (
     <>
       <DialogContent className="flex max-h-[90vh] w-full max-w-md flex-col items-center gap-4 overflow-y-auto text-center">
-        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-green-600">
+        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-success)]/15 text-[var(--color-success)]">
           <Check className="h-8 w-8" />
         </span>
         <div className="flex flex-col gap-1">
-          <DialogTitle className="text-lg font-semibold text-stone-900">ชำระเงินสำเร็จ</DialogTitle>
-          <DialogDescription className="text-sm tabular-nums text-stone-500">
+          <DialogTitle className="text-lg font-semibold text-text">ชำระเงินสำเร็จ</DialogTitle>
+          <DialogDescription className="text-sm tabular-nums text-text-muted">
             บิล {result.orderNumber} · {formatCurrency(total)}
           </DialogDescription>
         </div>
         {result.changeDue > 0 && (
-          <div className="w-full rounded-lg bg-amber-50 py-3">
-            <p className="text-xs uppercase tracking-wide text-amber-700">เงินทอน</p>
-            <p className="text-3xl font-bold tabular-nums text-amber-800">
+          <div className="w-full rounded-lg bg-primary/10 py-3">
+            <p className="text-xs uppercase tracking-wide text-primary">เงินทอน</p>
+            <p className="text-3xl font-bold tabular-nums text-primary">
               {formatCurrency(result.changeDue)}
             </p>
           </div>
         )}
         {result.receipt && (
-          <div className="w-full overflow-y-auto rounded-lg border border-stone-200 p-3">
+          <div className="w-full overflow-y-auto rounded-lg border border-border p-3">
             <ReceiptPreview receipt={result.receipt} />
           </div>
         )}
