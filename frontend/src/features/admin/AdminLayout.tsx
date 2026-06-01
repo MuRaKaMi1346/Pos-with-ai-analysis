@@ -5,6 +5,7 @@ import {
   Coffee,
   ListChecks,
   NotebookText,
+  Receipt,
   ScrollText,
   Settings,
   Undo2,
@@ -23,6 +24,7 @@ interface Section {
 
 /** Admin sections — extended one milestone at a time as each screen lands. */
 const SECTIONS: Section[] = [
+  { to: '/admin/orders', label: 'บิล', icon: <Receipt className="h-4 w-4" /> },
   { to: '/admin/products', label: 'สินค้า', icon: <Coffee className="h-4 w-4" /> },
   { to: '/admin/ingredients', label: 'วัตถุดิบ', icon: <Boxes className="h-4 w-4" /> },
   { to: '/admin/recipes', label: 'สูตร (BOM)', icon: <NotebookText className="h-4 w-4" /> },

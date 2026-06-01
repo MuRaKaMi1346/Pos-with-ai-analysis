@@ -8,6 +8,7 @@ import { DiscountsPage } from '@/features/admin/DiscountsPage'
 import { IngredientsPage } from '@/features/admin/IngredientsPage'
 import { InventoryPage } from '@/features/admin/InventoryPage'
 import { ModifierGroupsPage } from '@/features/admin/ModifierGroupsPage'
+import { OrdersPage } from '@/features/admin/OrdersPage'
 import { ProductsPage } from '@/features/admin/ProductsPage'
 import { RecipesPage } from '@/features/admin/RecipesPage'
 import { RefundsPage } from '@/features/admin/RefundsPage'
@@ -48,6 +49,7 @@ export const router = createBrowserRouter([
                 children: [
                   { index: true, element: <Navigate to="/admin/products" replace /> },
                   { path: 'products', element: <ProductsPage /> },
+                  { path: 'orders', element: <OrdersPage /> },
                   { path: 'ingredients', element: <IngredientsPage /> },
                   { path: 'recipes', element: <RecipesPage /> },
                   { path: 'inventory', element: <InventoryPage /> },
