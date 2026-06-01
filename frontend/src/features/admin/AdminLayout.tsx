@@ -1,4 +1,12 @@
-import { BadgePercent, Banknote, Boxes, NotebookText, ScrollText, Warehouse } from 'lucide-react'
+import {
+  BadgePercent,
+  Banknote,
+  Boxes,
+  ListChecks,
+  NotebookText,
+  ScrollText,
+  Warehouse,
+} from 'lucide-react'
 import type { ReactNode } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 
@@ -16,6 +24,7 @@ const SECTIONS: Section[] = [
   { to: '/admin/recipes', label: 'สูตร (BOM)', icon: <NotebookText className="h-4 w-4" /> },
   { to: '/admin/inventory', label: 'คลังสต็อก', icon: <Warehouse className="h-4 w-4" /> },
   { to: '/admin/discounts', label: 'ส่วนลด', icon: <BadgePercent className="h-4 w-4" /> },
+  { to: '/admin/modifiers', label: 'กลุ่มตัวเลือก', icon: <ListChecks className="h-4 w-4" /> },
   { to: '/admin/cash-drawer', label: 'ลิ้นชักเงินสด', icon: <Banknote className="h-4 w-4" /> },
   { to: '/admin/audit', label: 'บันทึกการใช้งาน', icon: <ScrollText className="h-4 w-4" /> },
 ]

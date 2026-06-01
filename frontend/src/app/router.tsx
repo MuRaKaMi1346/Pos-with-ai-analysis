@@ -7,6 +7,7 @@ import { CashDrawerPage } from '@/features/admin/CashDrawerPage'
 import { DiscountsPage } from '@/features/admin/DiscountsPage'
 import { IngredientsPage } from '@/features/admin/IngredientsPage'
 import { InventoryPage } from '@/features/admin/InventoryPage'
+import { ModifierGroupsPage } from '@/features/admin/ModifierGroupsPage'
 import { RecipesPage } from '@/features/admin/RecipesPage'
 import { AiInsightsPage } from '@/features/ai-insights/AiInsightsPage'
 import { LoginPage } from '@/features/auth/LoginPage'
@@ -47,6 +48,7 @@ export const router = createBrowserRouter([
                   { path: 'recipes', element: <RecipesPage /> },
                   { path: 'inventory', element: <InventoryPage /> },
                   { path: 'discounts', element: <DiscountsPage /> },
+                  { path: 'modifiers', element: <ModifierGroupsPage /> },
                   { path: 'cash-drawer', element: <CashDrawerPage /> },
                   { path: 'audit', element: <AuditPage /> },
                 ],
