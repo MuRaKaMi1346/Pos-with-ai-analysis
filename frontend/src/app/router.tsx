@@ -2,6 +2,8 @@ import { Navigate, createBrowserRouter } from 'react-router-dom'
 
 import { AppShell } from '@/components/layout/AppShell'
 import { AdminLayout } from '@/features/admin/AdminLayout'
+import { AuditPage } from '@/features/admin/AuditPage'
+import { CashDrawerPage } from '@/features/admin/CashDrawerPage'
 import { DiscountsPage } from '@/features/admin/DiscountsPage'
 import { IngredientsPage } from '@/features/admin/IngredientsPage'
 import { InventoryPage } from '@/features/admin/InventoryPage'
@@ -45,6 +47,8 @@ export const router = createBrowserRouter([
                   { path: 'recipes', element: <RecipesPage /> },
                   { path: 'inventory', element: <InventoryPage /> },
                   { path: 'discounts', element: <DiscountsPage /> },
+                  { path: 'cash-drawer', element: <CashDrawerPage /> },
+                  { path: 'audit', element: <AuditPage /> },
                 ],
               },
             ],
