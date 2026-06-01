@@ -19,8 +19,13 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>
 
+// Dark, monochrome field styling layered over the shared Input base.
 const FIELD =
-  'h-11 pl-10 focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-0'
+  'h-11 pl-10 border-white/10 bg-white/[0.04] text-white placeholder:text-white/35 ' +
+  'focus-visible:ring-white/70 focus-visible:ring-offset-0 focus-visible:border-white/30'
+
+const LABEL = 'text-white/80'
+const ERROR = 'text-xs text-red-300'
 
 export function LoginForm() {
   const navigate = useNavigate()
@@ -53,11 +58,13 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
       <div className="space-y-2">
-        <Label htmlFor="username">Username</Label>
+        <Label htmlFor="username" className={LABEL}>
+          Username
+        </Label>
         <div className="relative">
           <User
             aria-hidden
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted"
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40"
           />
           <Input
             id="username"
@@ -70,18 +77,20 @@ export function LoginForm() {
           />
         </div>
         {errors.username && (
-          <p role="alert" className="text-xs text-[var(--color-danger)]">
+          <p role="alert" className={ERROR}>
             {errors.username.message}
           </p>
         )}
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="password">Password</Label>
+        <Label htmlFor="password" className={LABEL}>
+          Password
+        </Label>
         <div className="relative">
           <Lock
             aria-hidden
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted"
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40"
           />
           <Input
             id="password"
@@ -100,14 +109,14 @@ export function LoginForm() {
             aria-label={showPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
             aria-pressed={showPassword}
             className="absolute right-1 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center
-                       justify-center rounded-md text-text-muted transition-colors hover:text-text
-                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)]"
+                       justify-center rounded-md text-white/45 transition-colors hover:text-white
+                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
           >
             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
         </div>
         {errors.password && (
-          <p role="alert" className="text-xs text-[var(--color-danger)]">
+          <p role="alert" className={ERROR}>
             {errors.password.message}
           </p>
         )}
@@ -116,8 +125,8 @@ export function LoginForm() {
       <Button
         type="submit"
         disabled={isSubmitting}
-        className="h-11 w-full bg-primary text-primary-fg shadow-sm hover:bg-primary/90
-                   focus-visible:ring-[var(--color-primary)] focus-visible:ring-offset-0"
+        className="mt-1 h-11 w-full bg-white text-[oklch(0.15_0_0)] shadow-sm hover:bg-white/90
+                   focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[oklch(0.15_0_0)]"
       >
         {isSubmitting ? (
           <>
