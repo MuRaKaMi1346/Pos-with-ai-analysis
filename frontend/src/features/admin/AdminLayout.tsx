@@ -5,6 +5,7 @@ import {
   ListChecks,
   NotebookText,
   ScrollText,
+  Undo2,
   Warehouse,
 } from 'lucide-react'
 import type { ReactNode } from 'react'
@@ -26,6 +27,7 @@ const SECTIONS: Section[] = [
   { to: '/admin/discounts', label: 'ส่วนลด', icon: <BadgePercent className="h-4 w-4" /> },
   { to: '/admin/modifiers', label: 'กลุ่มตัวเลือก', icon: <ListChecks className="h-4 w-4" /> },
   { to: '/admin/cash-drawer', label: 'ลิ้นชักเงินสด', icon: <Banknote className="h-4 w-4" /> },
+  { to: '/admin/refunds', label: 'คืนเงิน', icon: <Undo2 className="h-4 w-4" /> },
   { to: '/admin/audit', label: 'บันทึกการใช้งาน', icon: <ScrollText className="h-4 w-4" /> },
 ]
 

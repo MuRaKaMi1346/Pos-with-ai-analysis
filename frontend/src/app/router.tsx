@@ -9,6 +9,7 @@ import { IngredientsPage } from '@/features/admin/IngredientsPage'
 import { InventoryPage } from '@/features/admin/InventoryPage'
 import { ModifierGroupsPage } from '@/features/admin/ModifierGroupsPage'
 import { RecipesPage } from '@/features/admin/RecipesPage'
+import { RefundsPage } from '@/features/admin/RefundsPage'
 import { AiInsightsPage } from '@/features/ai-insights/AiInsightsPage'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { AdminRoute } from '@/features/auth/components/AdminRoute'
@@ -50,6 +51,7 @@ export const router = createBrowserRouter([
                   { path: 'discounts', element: <DiscountsPage /> },
                   { path: 'modifiers', element: <ModifierGroupsPage /> },
                   { path: 'cash-drawer', element: <CashDrawerPage /> },
+                  { path: 'refunds', element: <RefundsPage /> },
                   { path: 'audit', element: <AuditPage /> },
                 ],
               },
