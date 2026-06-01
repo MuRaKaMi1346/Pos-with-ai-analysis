@@ -1,9 +1,12 @@
 import { BarChart3, Brain, ChefHat, Coffee, LogOut, Moon, Sun, Wallet } from 'lucide-react'
 import { NavLink, useNavigate } from 'react-router-dom'
 
+import type { MouseEvent } from 'react'
+
 import { Button } from '@/components/ui/button'
 import { logoutRequest } from '@/features/auth/api/auth'
 import { useAuthStore } from '@/features/auth/stores/authStore'
+import { animateThemeChange } from '@/lib/theme-transition'
 import { cn } from '@/lib/utils'
 import { useUiStore } from '@/stores/uiStore'
 
@@ -31,6 +34,15 @@ export function Header() {
     }
     clear()
     navigate('/login', { replace: true })
+  }
+
+  // Reveal the new theme as a circle expanding from the toggle button.
+  function handleToggleTheme(e: MouseEvent<HTMLButtonElement>): void {
+    const rect = e.currentTarget.getBoundingClientRect()
+    animateThemeChange(toggleTheme, {
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2,
+    })
   }
 
   return (
@@ -68,7 +80,7 @@ export function Header() {
         )}
         <button
           type="button"
-          onClick={toggleTheme}
+          onClick={handleToggleTheme}
           aria-label={theme === 'dark' ? 'สลับเป็นโหมดสว่าง' : 'สลับเป็นโหมดมืด'}
           className="inline-flex h-9 w-9 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-surface-2 hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >

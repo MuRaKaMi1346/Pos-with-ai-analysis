@@ -102,6 +102,30 @@ body,
   color: var(--color-text);
 }
 
+/* Theme switch motion (View Transitions). The new theme is clip-revealed over
+   the old by lib/theme-transition.ts, so disable the browser's default
+   crossfade and stack the new snapshot on top. Reduced motion → no animation,
+   the snapshots just swap instantly. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-old(root) {
+  z-index: 1;
+}
+::view-transition-new(root) {
+  z-index: 2147483646;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
+}
+
 /* Density (M19, spec §5.13): a global compact / comfortable scale on the root
    font-size so rem-based Tailwind spacing + type scale together. Toggled from
    the POS sub-bar; applied to <html> by AppShell. */
