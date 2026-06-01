@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
-// Reduced motion → the static fallback renders and the lazy R3F chunk (WebGL,
-// unavailable in jsdom) is never mounted.
+// Drive reduced motion so the aurora/parallax stay static; the design is pure
+// CSS/SVG now, so there is never a WebGL canvas to mount.
 vi.mock('framer-motion', async (importOriginal) => {
   const actual = await importOriginal<typeof import('framer-motion')>()
   return { ...actual, useReducedMotion: vi.fn(() => true) }
@@ -15,10 +15,12 @@ vi.mock('@/features/auth/components/LoginForm', () => ({
 import { LoginPage } from '@/features/auth/LoginPage'
 
 describe('LoginPage', () => {
-  it('shows the static hero (not the 3D canvas) under reduced motion, with the form', () => {
+  it('renders the brand hero and the sign-in form, with no WebGL canvas', () => {
     render(<LoginPage />)
-    expect(screen.getByTestId('login-hero-fallback')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'เข้าสู่ระบบ' })).toBeInTheDocument()
     expect(screen.getByTestId('login-form')).toBeInTheDocument()
+    // Brand wordmark appears in both the hero and the form header.
+    expect(screen.getAllByText('SmartBrew POS').length).toBeGreaterThanOrEqual(1)
     expect(document.querySelector('canvas')).toBeNull()
   })
 })
