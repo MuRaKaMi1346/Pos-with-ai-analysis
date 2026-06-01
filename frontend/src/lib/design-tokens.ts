@@ -29,3 +29,23 @@ export const colorVar = {
   warning: 'var(--color-warning)',
   danger: 'var(--color-danger)',
 } as const
+
+/** Data-viz palette references (resolve via CSS `var`). Usable as SVG fills. */
+export const chartVar = {
+  c1: 'var(--color-chart-1)',
+  c2: 'var(--color-chart-2)',
+  c3: 'var(--color-chart-3)',
+  c4: 'var(--color-chart-4)',
+  c5: 'var(--color-chart-5)',
+  c6: 'var(--color-chart-6)',
+} as const
+
+/** Ordered series colours for charts that map a list of categories to colours. */
+export const chartSeries = [
+  chartVar.c1,
+  chartVar.c2,
+  chartVar.c3,
+  chartVar.c4,
+  chartVar.c5,
+  chartVar.c6,
+] as const
