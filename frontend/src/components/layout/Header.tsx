@@ -1,4 +1,4 @@
-import { BarChart3, Brain, ChefHat, Coffee, LogOut, Moon, Sun, Wallet } from 'lucide-react'
+import { BarChart3, Boxes, Brain, ChefHat, Coffee, LogOut, Moon, Sun, Wallet } from 'lucide-react'
 import { NavLink, useNavigate } from 'react-router-dom'
 
 import type { MouseEvent } from 'react'
@@ -66,6 +66,9 @@ export function Header() {
               </NavLink>
               <NavLink to="/ai-insights" className={navLinkClass}>
                 <Brain className="h-4 w-4" /> AI
+              </NavLink>
+              <NavLink to="/admin" className={navLinkClass}>
+                <Boxes className="h-4 w-4" /> จัดการ
               </NavLink>
             </>
           )}

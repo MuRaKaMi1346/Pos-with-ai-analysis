@@ -1,6 +1,9 @@
 import { Navigate, createBrowserRouter } from 'react-router-dom'
 
 import { AppShell } from '@/components/layout/AppShell'
+import { AdminLayout } from '@/features/admin/AdminLayout'
+import { IngredientsPage } from '@/features/admin/IngredientsPage'
+import { InventoryPage } from '@/features/admin/InventoryPage'
 import { AiInsightsPage } from '@/features/ai-insights/AiInsightsPage'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { AdminRoute } from '@/features/auth/components/AdminRoute'
@@ -31,6 +34,15 @@ export const router = createBrowserRouter([
             children: [
               { path: 'dashboard', element: <DashboardPage /> },
               { path: 'ai-insights', element: <AiInsightsPage /> },
+              {
+                path: 'admin',
+                element: <AdminLayout />,
+                children: [
+                  { index: true, element: <Navigate to="/admin/ingredients" replace /> },
+                  { path: 'ingredients', element: <IngredientsPage /> },
+                  { path: 'inventory', element: <InventoryPage /> },
+                ],
+              },
             ],
           },
         ],
