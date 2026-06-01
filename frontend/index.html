@@ -5,6 +5,22 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SmartBrew POS</title>
+    <!-- Set the theme before first paint to avoid a flash. Reads the persisted
+         Zustand store (smartbrew-ui), falling back to the OS preference. -->
+    <script>
+      (function () {
+        try {
+          var stored = JSON.parse(localStorage.getItem('smartbrew-ui') || '{}')
+          var theme = stored && stored.state && stored.state.theme
+          if (theme !== 'light' && theme !== 'dark') {
+            theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+          }
+          document.documentElement.dataset.theme = theme
+        } catch (e) {
+          /* ignore */
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

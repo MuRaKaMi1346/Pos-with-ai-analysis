@@ -8,12 +8,19 @@ import { useUiStore } from '@/stores/uiStore'
 
 export function AppShell() {
   const density = useUiStore((s) => s.density)
+  const theme = useUiStore((s) => s.theme)
   const location = useLocation()
   const reduced = useReducedMotion() ?? false
 
   useEffect(() => {
     document.documentElement.dataset.density = density
   }, [density])
+
+  // Keep <html data-theme> in sync (the FOUC script sets it pre-render; this
+  // covers store rehydration and toggles).
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+  }, [theme])
 
   return (
     <div className="flex min-h-screen flex-col">

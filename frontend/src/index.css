@@ -1,5 +1,11 @@
 @import 'tailwindcss';
 
+/* Class-based dark mode: `dark:` utilities apply under <html data-theme="dark">.
+   Most theming is done by overriding the semantic tokens below (so token-based
+   utilities like bg-surface flip automatically); `dark:` is for the few accent
+   tints that aren't tokens. */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
 @theme {
   --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 
@@ -18,6 +24,7 @@
   --color-success: oklch(0.65 0.16 150);
   --color-warning: oklch(0.78 0.16 80);
   --color-danger: oklch(0.6 0.22 27);
+  --color-input: oklch(1 0 0); /* form field surface */
   --shadow-card: 0 1px 2px oklch(0 0 0 / 0.04), 0 6px 18px oklch(0 0 0 / 0.06);
   --shadow-card-hover: 0 2px 6px oklch(0 0 0 / 0.08), 0 18px 40px oklch(0 0 0 / 0.12);
   --shadow-press: 0 1px 1px oklch(0 0 0 / 0.1) inset;
@@ -44,6 +51,42 @@
   color-scheme: light;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Dark theme — overrides the semantic token values so every token-based utility
+   (bg-surface, text-text, border-border, chart fills, shadows…) flips. Tuned to
+   be desaturated + slightly cool, with a lighter caramel primary so it stays
+   on-brand and keeps contrast (pos-ui §2 dark pairing). */
+[data-theme='dark'] {
+  color-scheme: dark;
+  --color-bg: oklch(0.165 0.006 270);
+  --color-surface: oklch(0.205 0.007 270);
+  --color-surface-2: oklch(0.255 0.008 270);
+  --color-surface-ink: oklch(0.13 0.006 270);
+  --color-border: oklch(0.305 0.008 270);
+  --color-text: oklch(0.96 0.004 270);
+  --color-text-muted: oklch(0.72 0.01 270);
+  --color-primary: oklch(0.72 0.13 60); /* lighter caramel for dark */
+  --color-primary-fg: oklch(0.2 0.02 60); /* dark text on caramel */
+  --color-success: oklch(0.72 0.16 150);
+  --color-warning: oklch(0.8 0.15 80);
+  --color-danger: oklch(0.68 0.2 25);
+  --color-input: oklch(0.245 0.008 270);
+
+  --color-chart-1: oklch(0.7 0.14 50);
+  --color-chart-2: oklch(0.68 0.14 255);
+  --color-chart-3: oklch(0.72 0.15 155);
+  --color-chart-4: oklch(0.8 0.14 85);
+  --color-chart-5: oklch(0.68 0.18 305);
+  --color-chart-6: oklch(0.72 0.12 200);
+  --color-chart-1-soft: oklch(0.3 0.05 50);
+  --color-chart-2-soft: oklch(0.3 0.05 255);
+  --color-chart-3-soft: oklch(0.3 0.05 155);
+  --color-chart-4-soft: oklch(0.32 0.06 85);
+
+  --shadow-card: 0 1px 2px oklch(0 0 0 / 0.4), 0 8px 24px oklch(0 0 0 / 0.5);
+  --shadow-card-hover: 0 2px 6px oklch(0 0 0 / 0.5), 0 20px 48px oklch(0 0 0 / 0.6);
+  --shadow-press: 0 1px 1px oklch(0 0 0 / 0.5) inset;
 }
 
 * {

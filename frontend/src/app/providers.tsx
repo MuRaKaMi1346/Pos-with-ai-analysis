@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import { Toaster } from 'sonner'
 
 import { queryClient } from '@/app/queryClient'
+import { useUiStore } from '@/stores/uiStore'
 
 /** Default toast icons — lucide, mapped per sonner level (pos-ui-motion §4.11). */
 const toastIcons = {
@@ -14,10 +15,11 @@ const toastIcons = {
 }
 
 export function Providers({ children }: { children: ReactNode }) {
+  const theme = useUiStore((s) => s.theme)
   return (
     <QueryClientProvider client={queryClient}>
       {children}
-      <Toaster position="top-center" richColors icons={toastIcons} />
+      <Toaster position="top-center" richColors theme={theme} icons={toastIcons} />
     </QueryClientProvider>
   )
 }

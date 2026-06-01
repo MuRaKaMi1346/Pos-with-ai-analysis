@@ -1,15 +1,18 @@
-import { BarChart3, Brain, ChefHat, Coffee, LogOut, Wallet } from 'lucide-react'
+import { BarChart3, Brain, ChefHat, Coffee, LogOut, Moon, Sun, Wallet } from 'lucide-react'
 import { NavLink, useNavigate } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
 import { logoutRequest } from '@/features/auth/api/auth'
 import { useAuthStore } from '@/features/auth/stores/authStore'
 import { cn } from '@/lib/utils'
+import { useUiStore } from '@/stores/uiStore'
 
 function navLinkClass({ isActive }: { isActive: boolean }): string {
   return cn(
     'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors',
-    isActive ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100',
+    isActive
+      ? 'bg-[var(--color-text)] text-[var(--color-bg)]'
+      : 'text-text-muted hover:bg-surface-2',
   )
 }
 
@@ -17,6 +20,8 @@ export function Header() {
   const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
   const clear = useAuthStore((s) => s.clear)
+  const theme = useUiStore((s) => s.theme)
+  const toggleTheme = useUiStore((s) => s.toggleTheme)
 
   async function handleLogout(): Promise<void> {
     try {
@@ -29,7 +34,7 @@ export function Header() {
   }
 
   return (
-    <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3">
+    <header className="flex items-center justify-between border-b border-border bg-surface px-6 py-3">
       <div className="flex items-center gap-6">
         <span className="text-lg font-semibold">SmartBrew POS</span>
         <nav className="flex items-center gap-1">
@@ -54,13 +59,21 @@ export function Header() {
           )}
         </nav>
       </div>
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         {user && (
           <div className="text-right">
             <p className="text-sm font-medium">{user.username}</p>
-            <p className="text-xs text-slate-500">{user.role}</p>
+            <p className="text-xs text-text-muted">{user.role}</p>
           </div>
         )}
+        <button
+          type="button"
+          onClick={toggleTheme}
+          aria-label={theme === 'dark' ? 'สลับเป็นโหมดสว่าง' : 'สลับเป็นโหมดมืด'}
+          className="inline-flex h-9 w-9 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-surface-2 hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+        </button>
         <Button variant="ghost" size="sm" onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" /> ออกจากระบบ
         </Button>

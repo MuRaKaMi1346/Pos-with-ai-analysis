@@ -9,7 +9,7 @@ import { useAuthStore } from '@/features/auth/stores/authStore'
 
 function FullScreenSpinner() {
   return (
-    <div className="flex min-h-screen items-center justify-center text-slate-500">
+    <div className="flex min-h-screen items-center justify-center text-text-muted">
       กำลังเตรียมระบบ…
     </div>
   )
