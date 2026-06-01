@@ -23,7 +23,9 @@ export function AppShell() {
   }, [theme])
 
   return (
-    <div className="flex min-h-screen flex-col">
+    // h-dvh (a *definite* height) so child `h-full` chains resolve (POS rail,
+    // KDS columns) and the fixed header sits above a scrollable <main>.
+    <div className="flex h-dvh flex-col">
       <Header />
       <main className="flex-1 overflow-y-auto">
         {/* Subtle route transition: new page rises in, old fades up (§4.9). */}
