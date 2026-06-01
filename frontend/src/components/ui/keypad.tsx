@@ -38,7 +38,7 @@ export function Keypad({ value, onChange, className }: KeypadProps) {
           onClick={() => {
             press(key)
           }}
-          className="flex h-14 items-center justify-center rounded-lg border border-stone-200 text-xl font-semibold text-stone-800 transition-colors hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 active:bg-stone-100"
+          className="flex h-14 items-center justify-center rounded-lg border border-border text-xl font-semibold text-text transition-colors hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary active:bg-surface-2"
         >
           {key === 'back' ? <Delete className="h-5 w-5" /> : key}
         </button>
@@ -48,7 +48,7 @@ export function Keypad({ value, onChange, className }: KeypadProps) {
         onClick={() => {
           onChange('')
         }}
-        className="col-span-3 flex h-12 items-center justify-center rounded-lg border border-stone-200 text-sm font-medium text-stone-500 transition-colors hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+        className="col-span-3 flex h-12 items-center justify-center rounded-lg border border-border text-sm font-medium text-text-muted transition-colors hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
         ล้าง
       </button>

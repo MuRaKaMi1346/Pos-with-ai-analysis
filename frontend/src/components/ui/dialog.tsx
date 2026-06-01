@@ -30,8 +30,8 @@ export const DialogContent = forwardRef<HTMLDivElement, DialogPrimitive.DialogCo
         ref={ref}
         className={cn(
           'fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 ' +
-            'w-full max-w-md gap-4 rounded-lg border border-slate-200 ' +
-            'bg-white p-6 shadow-lg',
+            'w-full max-w-md gap-4 rounded-lg border border-border ' +
+            'bg-surface text-text p-6 shadow-lg',
           className,
         )}
         {...props}
@@ -41,7 +41,7 @@ export const DialogContent = forwardRef<HTMLDivElement, DialogPrimitive.DialogCo
           className={cn(
             'absolute right-4 top-4 rounded-sm opacity-70 transition-opacity ' +
               'hover:opacity-100 focus:outline-none focus:ring-2 ' +
-              'focus:ring-slate-900',
+              'focus:ring-primary',
           )}
         >
           <X className="h-4 w-4" />
@@ -83,7 +83,7 @@ export const DialogDescription = forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Description
     ref={ref}
-    className={cn('text-sm text-slate-500', className)}
+    className={cn('text-sm text-text-muted', className)}
     {...props}
   />
 ))

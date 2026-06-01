@@ -7,16 +7,19 @@ import { cn } from '@/lib/utils'
 const buttonVariants = cva(
   'inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium ' +
     'transition-colors focus-visible:outline-none focus-visible:ring-2 ' +
-    'focus-visible:ring-slate-900 focus-visible:ring-offset-2 ' +
+    'focus-visible:ring-primary focus-visible:ring-offset-2 ' +
+    'focus-visible:ring-offset-[var(--color-bg)] ' +
     'disabled:pointer-events-none disabled:opacity-50',
   {
     variants: {
       variant: {
-        default: 'bg-slate-900 text-white hover:bg-slate-800',
-        destructive: 'bg-red-600 text-white hover:bg-red-700',
-        outline: 'border border-slate-300 bg-white text-slate-900 hover:bg-slate-100',
-        ghost: 'text-slate-900 hover:bg-slate-100',
-        link: 'text-slate-900 underline-offset-4 hover:underline',
+        // Strong neutral that flips with the theme (dark button in light mode,
+        // light button in dark mode) — uses the text/bg tokens.
+        default: 'bg-[var(--color-text)] text-[var(--color-bg)] hover:opacity-90',
+        destructive: 'bg-[var(--color-danger)] text-white hover:opacity-90',
+        outline: 'border border-border bg-surface text-text hover:bg-surface-2',
+        ghost: 'text-text hover:bg-surface-2',
+        link: 'text-text underline-offset-4 hover:underline',
       },
       size: {
         default: 'h-10 px-4 py-2',
