@@ -1,15 +1,15 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { cn, formatCurrency } from '@/lib/utils'
+import type { ReactNode } from 'react'
+
+import { ChartCard } from '@/features/dashboard/components/ChartCard'
+import { formatCurrency } from '@/lib/utils'
 import type { PeakHoursCell } from '@/types/dashboard'
 
 const WEEKDAYS_TH = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส']
 
-function intensityClass(ratio: number): string {
-  if (ratio === 0) return 'bg-slate-100'
-  if (ratio < 0.25) return 'bg-blue-100'
-  if (ratio < 0.5) return 'bg-blue-300'
-  if (ratio < 0.75) return 'bg-blue-500'
-  return 'bg-blue-700'
+/** Espresso-primary ramp: empty cells fall back to the neutral surface tint. */
+function cellBackground(ratio: number): string {
+  if (ratio <= 0) return 'var(--color-surface-2)'
+  return `oklch(0.55 0.18 35 / ${(0.15 + ratio * 0.85).toFixed(3)})`
 }
 
 export function PeakHoursHeatmap({
@@ -29,17 +29,17 @@ export function PeakHoursHeatmap({
   }
   const denom = max === 0 ? 1 : max
 
-  const gridChildren: React.ReactNode[] = [<div key="corner" />]
+  const gridChildren: ReactNode[] = [<div key="corner" />]
   for (let h = 0; h < 24; h++) {
     gridChildren.push(
-      <div key={`hour-${h}`} className="text-center text-[10px] text-slate-500">
+      <div key={`hour-${h}`} className="text-center text-[10px] text-text-muted">
         {h}
       </div>,
     )
   }
   for (let w = 0; w < 7; w++) {
     gridChildren.push(
-      <div key={`label-${w}`} className="pr-2 text-right text-xs text-slate-500">
+      <div key={`label-${w}`} className="pr-2 text-right text-xs text-text-muted">
         {WEEKDAYS_TH[w]}
       </div>,
     )
@@ -49,7 +49,10 @@ export function PeakHoursHeatmap({
       gridChildren.push(
         <div
           key={`${w}-${h}`}
-          className={cn('aspect-square rounded-sm', intensityClass(rev / denom))}
+          className="aspect-square rounded-[3px] transition-transform duration-150
+                     hover:scale-[1.18] hover:ring-1 hover:ring-text/20
+                     motion-reduce:transition-none motion-reduce:hover:scale-100"
+          style={{ backgroundColor: cellBackground(rev / denom) }}
           title={
             cell
               ? `${WEEKDAYS_TH[w]} ${h}:00 — ${formatCurrency(rev)} (${cell.order_count} บิล)`
@@ -61,22 +64,33 @@ export function PeakHoursHeatmap({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>ช่วงเวลาขายดี (วัน × ชั่วโมง)</CardTitle>
-      </CardHeader>
-      <CardContent className="overflow-x-auto">
-        {isLoading ? (
-          <div className="flex h-32 items-center justify-center text-slate-500">กำลังโหลด…</div>
-        ) : (
-          <div
-            className="inline-grid min-w-full gap-1"
-            style={{ gridTemplateColumns: '32px repeat(24, minmax(18px, 1fr))' }}
-          >
-            {gridChildren}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+    <ChartCard
+      title="ช่วงเวลาขายดี (วัน × ชั่วโมง)"
+      isLoading={isLoading}
+      isEmpty={cells.length === 0}
+      height={200}
+      index={0}
+    >
+      <div className="overflow-x-auto">
+        <div
+          className="inline-grid min-w-full gap-1"
+          style={{ gridTemplateColumns: '32px repeat(24, minmax(18px, 1fr))' }}
+        >
+          {gridChildren}
+        </div>
+        <div className="mt-3 flex items-center justify-end gap-2 text-[10px] text-text-muted">
+          <span>น้อย</span>
+          {[0, 0.25, 0.5, 0.75, 1].map((r) => (
+            <span
+              key={r}
+              aria-hidden
+              className="h-3 w-3 rounded-[3px]"
+              style={{ backgroundColor: cellBackground(r) }}
+            />
+          ))}
+          <span>มาก</span>
+        </div>
+      </div>
+    </ChartCard>
   )
 }

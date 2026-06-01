@@ -1,14 +1,13 @@
-import {
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
+import { useReducedMotion } from 'framer-motion'
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ChartCard } from '@/features/dashboard/components/ChartCard'
+import {
+  axisTick,
+  gridStroke,
+  tooltipContentStyle,
+  tooltipLabelStyle,
+} from '@/features/dashboard/components/chart-theme'
 import { formatCurrency } from '@/lib/utils'
 import type { SalesTrendResponse } from '@/types/dashboard'
 
@@ -19,47 +18,43 @@ export function SalesTrendChart({
   data: SalesTrendResponse | undefined
   isLoading: boolean
 }) {
+  const reduced = useReducedMotion() ?? false
   const points = (data?.points ?? []).map((p) => ({
     bucket: p.bucket,
     revenue: Number(p.revenue),
     orders: p.order_count,
   }))
+
   return (
-    <Card className="h-full">
-      <CardHeader>
-        <CardTitle>ยอดขายแนวโน้ม</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="flex h-[280px] items-center justify-center text-slate-500">
-            กำลังโหลด…
-          </div>
-        ) : points.length === 0 ? (
-          <div className="flex h-[280px] items-center justify-center text-slate-500">
-            ยังไม่มีข้อมูลในช่วงนี้
-          </div>
-        ) : (
-          <ResponsiveContainer width="100%" height={280}>
-            <LineChart data={points} margin={{ left: 0, right: 20, top: 10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="bucket" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} width={64} />
-              <Tooltip
-                formatter={(value) => formatCurrency(Number(value))}
-                contentStyle={{ borderRadius: 8, borderColor: '#cbd5e1' }}
-              />
-              <Line
-                type="monotone"
-                dataKey="revenue"
-                stroke="#2563eb"
-                strokeWidth={2}
-                dot={{ r: 3 }}
-                activeDot={{ r: 5 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        )}
-      </CardContent>
-    </Card>
+    <ChartCard title="ยอดขายแนวโน้ม" isLoading={isLoading} isEmpty={points.length === 0} index={0}>
+      <ResponsiveContainer width="100%" height={280}>
+        <AreaChart data={points} margin={{ left: 0, right: 20, top: 10, bottom: 5 }}>
+          <defs>
+            <linearGradient id="trendArea" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--color-chart-1)" stopOpacity={0.28} />
+              <stop offset="100%" stopColor="var(--color-chart-1)" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
+          <XAxis dataKey="bucket" tick={axisTick} tickLine={false} axisLine={false} />
+          <YAxis tick={axisTick} width={64} tickLine={false} axisLine={false} />
+          <Tooltip
+            formatter={(value) => formatCurrency(Number(value))}
+            contentStyle={tooltipContentStyle}
+            labelStyle={tooltipLabelStyle}
+          />
+          <Area
+            type="monotone"
+            dataKey="revenue"
+            stroke="var(--color-chart-1)"
+            strokeWidth={2.5}
+            fill="url(#trendArea)"
+            dot={false}
+            activeDot={{ r: 5, strokeWidth: 0 }}
+            isAnimationActive={!reduced}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </ChartCard>
   )
 }

@@ -37,13 +37,13 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6 p-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Dashboard</h1>
-          <p className="text-sm text-slate-500">ภาพรวมยอดขาย กำไร และช่วงเวลาขายดี</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-text">Dashboard</h1>
+          <p className="text-sm text-text-muted">ภาพรวมยอดขาย กำไร และช่วงเวลาขายดี</p>
         </div>
         <DateRangePicker {...range} onChange={setRange} />
-      </div>
+      </header>
 
       <KpiCards summary={summary.data} />
 
