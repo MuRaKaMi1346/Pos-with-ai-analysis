@@ -1,4 +1,4 @@
-import { Boxes, Warehouse } from 'lucide-react'
+import { Boxes, NotebookText, Warehouse } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 
@@ -13,6 +13,7 @@ interface Section {
 /** Admin sections — extended one milestone at a time as each screen lands. */
 const SECTIONS: Section[] = [
   { to: '/admin/ingredients', label: 'วัตถุดิบ', icon: <Boxes className="h-4 w-4" /> },
+  { to: '/admin/recipes', label: 'สูตร (BOM)', icon: <NotebookText className="h-4 w-4" /> },
   { to: '/admin/inventory', label: 'คลังสต็อก', icon: <Warehouse className="h-4 w-4" /> },
 ]
 

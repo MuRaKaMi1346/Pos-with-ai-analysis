@@ -4,6 +4,7 @@ import { AppShell } from '@/components/layout/AppShell'
 import { AdminLayout } from '@/features/admin/AdminLayout'
 import { IngredientsPage } from '@/features/admin/IngredientsPage'
 import { InventoryPage } from '@/features/admin/InventoryPage'
+import { RecipesPage } from '@/features/admin/RecipesPage'
 import { AiInsightsPage } from '@/features/ai-insights/AiInsightsPage'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { AdminRoute } from '@/features/auth/components/AdminRoute'
@@ -40,6 +41,7 @@ export const router = createBrowserRouter([
                 children: [
                   { index: true, element: <Navigate to="/admin/ingredients" replace /> },
                   { path: 'ingredients', element: <IngredientsPage /> },
+                  { path: 'recipes', element: <RecipesPage /> },
                   { path: 'inventory', element: <InventoryPage /> },
                 ],
               },
