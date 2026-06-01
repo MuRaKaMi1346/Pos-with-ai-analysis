@@ -2,9 +2,11 @@ import {
   BadgePercent,
   Banknote,
   Boxes,
+  Coffee,
   ListChecks,
   NotebookText,
   ScrollText,
+  Settings,
   Undo2,
   Warehouse,
 } from 'lucide-react'
@@ -21,6 +23,7 @@ interface Section {
 
 /** Admin sections — extended one milestone at a time as each screen lands. */
 const SECTIONS: Section[] = [
+  { to: '/admin/products', label: 'สินค้า', icon: <Coffee className="h-4 w-4" /> },
   { to: '/admin/ingredients', label: 'วัตถุดิบ', icon: <Boxes className="h-4 w-4" /> },
   { to: '/admin/recipes', label: 'สูตร (BOM)', icon: <NotebookText className="h-4 w-4" /> },
   { to: '/admin/inventory', label: 'คลังสต็อก', icon: <Warehouse className="h-4 w-4" /> },
@@ -29,6 +32,7 @@ const SECTIONS: Section[] = [
   { to: '/admin/cash-drawer', label: 'ลิ้นชักเงินสด', icon: <Banknote className="h-4 w-4" /> },
   { to: '/admin/refunds', label: 'คืนเงิน', icon: <Undo2 className="h-4 w-4" /> },
   { to: '/admin/audit', label: 'บันทึกการใช้งาน', icon: <ScrollText className="h-4 w-4" /> },
+  { to: '/admin/settings', label: 'ตั้งค่า', icon: <Settings className="h-4 w-4" /> },
 ]
 
 /** Shell for the admin / back-office area: a section sub-nav above a scroll region. */

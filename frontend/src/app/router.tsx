@@ -8,8 +8,10 @@ import { DiscountsPage } from '@/features/admin/DiscountsPage'
 import { IngredientsPage } from '@/features/admin/IngredientsPage'
 import { InventoryPage } from '@/features/admin/InventoryPage'
 import { ModifierGroupsPage } from '@/features/admin/ModifierGroupsPage'
+import { ProductsPage } from '@/features/admin/ProductsPage'
 import { RecipesPage } from '@/features/admin/RecipesPage'
 import { RefundsPage } from '@/features/admin/RefundsPage'
+import { SettingsPage } from '@/features/admin/SettingsPage'
 import { AiInsightsPage } from '@/features/ai-insights/AiInsightsPage'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { AdminRoute } from '@/features/auth/components/AdminRoute'
@@ -44,7 +46,8 @@ export const router = createBrowserRouter([
                 path: 'admin',
                 element: <AdminLayout />,
                 children: [
-                  { index: true, element: <Navigate to="/admin/ingredients" replace /> },
+                  { index: true, element: <Navigate to="/admin/products" replace /> },
+                  { path: 'products', element: <ProductsPage /> },
                   { path: 'ingredients', element: <IngredientsPage /> },
                   { path: 'recipes', element: <RecipesPage /> },
                   { path: 'inventory', element: <InventoryPage /> },
@@ -53,6 +56,7 @@ export const router = createBrowserRouter([
                   { path: 'cash-drawer', element: <CashDrawerPage /> },
                   { path: 'refunds', element: <RefundsPage /> },
                   { path: 'audit', element: <AuditPage /> },
+                  { path: 'settings', element: <SettingsPage /> },
                 ],
               },
             ],
