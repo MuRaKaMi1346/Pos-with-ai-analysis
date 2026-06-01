@@ -1,52 +1,105 @@
+import { m, useReducedMotion } from 'framer-motion'
 import { Banknote, Receipt, TrendingUp, Wallet } from 'lucide-react'
 import type { ReactNode } from 'react'
 
-import { Card, CardContent } from '@/components/ui/card'
-import { formatCurrency } from '@/lib/utils'
+import { AnimatedNumber } from '@/components/ui/AnimatedNumber'
+import { TiltCard } from '@/components/ui/TiltCard'
+import { variants } from '@/lib/motion'
 import type { SummaryResponse } from '@/types/dashboard'
 
-interface KpiCardSpec {
+interface KpiSpec {
   label: string
-  value: string
+  /** Resolved numeric value, or null while the summary is still loading. */
+  value: number | null
+  /** Display formatter; defaults to baht currency in AnimatedNumber. */
+  format?: (n: number) => string
   icon: ReactNode
+  /** Accent (strip + icon) and the soft tint behind the icon tile. */
+  accent: string
+  soft: string
 }
 
+const intFmt = (n: number): string => Math.round(n).toLocaleString('th-TH')
+
 export function KpiCards({ summary }: { summary: SummaryResponse | undefined }) {
-  const cards: KpiCardSpec[] = [
+  const reduced = useReducedMotion() ?? false
+  const cards: KpiSpec[] = [
     {
       label: 'ยอดขายรวม',
-      value: summary ? formatCurrency(summary.total_revenue) : '—',
-      icon: <Banknote className="h-5 w-5 text-blue-600" />,
+      value: summary ? Number(summary.total_revenue) : null,
+      icon: <Banknote className="h-5 w-5" />,
+      accent: 'var(--color-chart-1)',
+      soft: 'var(--color-chart-1-soft)',
     },
     {
       label: 'จำนวนบิล',
-      value: summary ? summary.order_count.toLocaleString('th-TH') : '—',
-      icon: <Receipt className="h-5 w-5 text-purple-600" />,
+      value: summary ? summary.order_count : null,
+      format: intFmt,
+      icon: <Receipt className="h-5 w-5" />,
+      accent: 'var(--color-chart-2)',
+      soft: 'var(--color-chart-2-soft)',
     },
     {
       label: 'กำไรขั้นต้น',
-      value: summary ? formatCurrency(summary.gross_profit) : '—',
-      icon: <TrendingUp className="h-5 w-5 text-green-600" />,
+      value: summary ? Number(summary.gross_profit) : null,
+      icon: <TrendingUp className="h-5 w-5" />,
+      accent: 'var(--color-chart-3)',
+      soft: 'var(--color-chart-3-soft)',
     },
     {
       label: 'ยอดต่อบิลเฉลี่ย',
-      value: summary ? formatCurrency(summary.average_ticket) : '—',
-      icon: <Wallet className="h-5 w-5 text-amber-600" />,
+      value: summary ? Number(summary.average_ticket) : null,
+      icon: <Wallet className="h-5 w-5" />,
+      accent: 'var(--color-chart-4)',
+      soft: 'var(--color-chart-4-soft)',
     },
   ]
+
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <m.div
+      initial="hidden"
+      animate="visible"
+      variants={variants.stagger}
+      className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+    >
       {cards.map((card) => (
-        <Card key={card.label}>
-          <CardContent className="flex items-center justify-between p-6">
-            <div>
-              <p className="text-sm text-slate-500">{card.label}</p>
-              <p className="mt-1 text-2xl font-bold">{card.value}</p>
+        <m.div key={card.label} variants={reduced ? variants.fadeIn : variants.riseIn}>
+          <TiltCard
+            className="h-full overflow-hidden rounded-[var(--radius-card)] border border-border
+                       bg-surface p-5 shadow-[var(--shadow-card)] transition-shadow duration-200
+                       hover:shadow-[var(--shadow-card-hover)]"
+          >
+            <span
+              aria-hidden
+              className="absolute inset-x-0 top-0 h-1"
+              style={{ background: card.accent }}
+            />
+            <div
+              className="flex items-start justify-between gap-3"
+              style={{ transform: 'translateZ(24px)' }}
+            >
+              <p className="text-sm font-medium text-text-muted">{card.label}</p>
+              <span
+                aria-hidden
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl"
+                style={{ backgroundColor: card.soft, color: card.accent }}
+              >
+                {card.icon}
+              </span>
             </div>
-            <div className="rounded-full bg-slate-100 p-3">{card.icon}</div>
-          </CardContent>
-        </Card>
+            <p
+              className="mt-3 text-2xl font-bold tracking-tight text-text"
+              style={{ transform: 'translateZ(12px)' }}
+            >
+              {card.value === null ? (
+                <span className="text-text-muted">—</span>
+              ) : (
+                <AnimatedNumber value={card.value} format={card.format} />
+              )}
+            </p>
+          </TiltCard>
+        </m.div>
       ))}
-    </div>
+    </m.div>
   )
 }
