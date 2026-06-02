@@ -4,6 +4,7 @@ import { apiClient } from '@/lib/api/client'
 import type { Shift } from '@/types/shift'
 
 export const shiftsKey = ['shifts'] as const
+export const currentShiftKey = [...shiftsKey, 'current'] as const
 
 function statusOf(err: unknown): number | undefined {
   return (err as { response?: { status?: number } }).response?.status
@@ -12,7 +13,7 @@ function statusOf(err: unknown): number | undefined {
 /** The caller's open shift, or `null` when none is open (backend 404). */
 export function useCurrentShift() {
   return useQuery({
-    queryKey: [...shiftsKey, 'current'] as const,
+    queryKey: currentShiftKey,
     queryFn: async () => {
       try {
         const res = await apiClient.get<Shift>('/shifts/current')
@@ -34,7 +35,10 @@ export function useOpenShift() {
       })
       return res.data
     },
-    onSuccess: () => {
+    onSuccess: (shift) => {
+      // Prime the gate's cache so the immediate navigate('/pos') sees the open
+      // shift instead of the stale `null` (which would bounce back to /shift).
+      qc.setQueryData(currentShiftKey, shift)
       qc.invalidateQueries({ queryKey: shiftsKey })
     },
   })
@@ -51,6 +55,9 @@ export function useCloseShift() {
       return res.data
     },
     onSuccess: () => {
+      // The shift is now closed → no current shift, so the gate must see `null`
+      // (a stale open shift here would wrongly keep POS unlocked).
+      qc.setQueryData(currentShiftKey, null)
       qc.invalidateQueries({ queryKey: shiftsKey })
     },
   })
