@@ -46,6 +46,12 @@ class CategoryRead(BaseModel):
     default_station: Station
 
 
+class ImageUploadRead(BaseModel):
+    """Public URL path of a freshly uploaded product/menu image."""
+
+    url: str
+
+
 class ProductRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

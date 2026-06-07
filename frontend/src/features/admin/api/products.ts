@@ -66,6 +66,20 @@ export function useUpdateProduct() {
   })
 }
 
+/** Upload a menu image file from the device; resolves to the stored URL path
+ *  (e.g. `/media/products/<uuid>.png`) to drop into a product's `image` field. */
+export function useUploadProductImage() {
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const form = new FormData()
+      form.append('file', file)
+      // Let the browser/axios set the multipart boundary; don't override Content-Type.
+      const res = await apiClient.post<{ url: string }>('/products/image', form)
+      return res.data.url
+    },
+  })
+}
+
 export function useDeactivateProduct() {
   const qc = useQueryClient()
   return useMutation({

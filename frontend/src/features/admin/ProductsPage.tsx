@@ -9,6 +9,7 @@ import {
   useCreateProduct,
   useDeactivateProduct,
   useUpdateProduct,
+  useUploadProductImage,
 } from '@/features/admin/api/products'
 import { ProductDialog } from '@/features/admin/components/ProductDialog'
 import { useCategories } from '@/features/pos/api/products'
@@ -22,6 +23,7 @@ export function ProductsPage() {
   const create = useCreateProduct()
   const update = useUpdateProduct()
   const deactivate = useDeactivateProduct()
+  const uploadImage = useUploadProductImage()
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<Product | undefined>(undefined)
@@ -189,6 +191,7 @@ export function ProductsPage() {
         onSubmit={(v) => {
           void handleSubmit(v)
         }}
+        onUploadImage={(file) => uploadImage.mutateAsync(file)}
         isPending={create.isPending || update.isPending}
       />
     </div>

@@ -15,9 +15,14 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    // Proxy /api to backend so cookies stay same-origin (refresh-cookie flow needs this)
+    // Proxy /api to backend so cookies stay same-origin (refresh-cookie flow needs this).
+    // /media serves uploaded product images from the backend's disk.
     proxy: {
       '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/media': {
         target: 'http://localhost:8000',
         changeOrigin: true,
       },

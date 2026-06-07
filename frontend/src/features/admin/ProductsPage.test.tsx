@@ -25,6 +25,7 @@ vi.mock('@/features/admin/api/products', () => ({
   useCreateProduct: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useUpdateProduct: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useDeactivateProduct: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useUploadProductImage: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }))
 vi.mock('@/features/pos/api/products', () => ({
   useCategories: () => ({ data: [{ id: 1, name: 'กาแฟ', default_station: 'bar' }] }),

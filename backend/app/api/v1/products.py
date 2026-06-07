@@ -1,12 +1,12 @@
 """Products endpoints."""
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, UploadFile, status
 
-from app.core.dependencies import CurrentUserDep, DBSessionDep, require_role
+from app.core.dependencies import CurrentUserDep, DBSessionDep, SettingsDep, require_role
 from app.models import Product, Role
 from app.schemas.modifier import ModifierGroupRead
-from app.schemas.product import ProductCreate, ProductRead, ProductUpdate
-from app.services import product_service
+from app.schemas.product import ImageUploadRead, ProductCreate, ProductRead, ProductUpdate
+from app.services import product_service, upload_service
 
 router = APIRouter(prefix="/products", tags=["products"])
 
@@ -71,6 +71,23 @@ def list_product_modifiers(
 )
 def create_product(data: ProductCreate, session: DBSessionDep) -> Product:
     return product_service.create(session, data)
+
+
+@router.post(
+    "/image",
+    response_model=ImageUploadRead,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_role(Role.ADMIN))],
+)
+async def upload_product_image(file: UploadFile, settings: SettingsDep) -> ImageUploadRead:
+    """Upload a menu picture from the admin's device; returns the stored URL.
+
+    The caller then sends this ``url`` as ``image`` on product create/update, so
+    the upload and the product record stay decoupled — re-using or replacing an
+    image is just a string change.
+    """
+    url = await upload_service.save_product_image(file, settings)
+    return ImageUploadRead(url=url)
 
 
 @router.patch(

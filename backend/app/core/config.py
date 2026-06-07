@@ -36,6 +36,13 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./smartbrew.db"
     sql_echo: bool = False
 
+    # ── Uploads (product / menu images) ────────────────────────────
+    # Images are written to local disk under ``upload_dir`` and served
+    # read-only at ``/media`` (see app/main.py). Local-only, per the
+    # "no customer data leaves the machine" rule.
+    upload_dir: str = "uploads"
+    max_image_upload_mb: int = 5
+
     # ── Rate limit ─────────────────────────────────────────────────
     rate_limit_login: str = "10/minute"
 

@@ -3,9 +3,11 @@
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 from sqlmodel import Session
 
@@ -63,6 +65,12 @@ def create_app() -> FastAPI:
 
     register_exception_handlers(app)
     app.include_router(api_router)
+
+    # Serve uploaded product/menu images read-only. mkdir first — StaticFiles
+    # refuses to mount a missing directory.
+    media_root = Path(settings.upload_dir)
+    media_root.mkdir(parents=True, exist_ok=True)
+    app.mount("/media", StaticFiles(directory=media_root), name="media")
 
     @app.get("/health", tags=["meta"])
     def health() -> dict[str, str]:

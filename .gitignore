@@ -56,6 +56,9 @@ coverage.xml
 models_store/*
 !models_store/.gitkeep
 
+# Uploaded product/menu images (served from disk, not committed)
+uploads/
+
 # ---------- Node / Frontend ----------
 node_modules/
 .pnpm-store/
@@ -85,4 +88,4 @@ lerna-debug.log*
 *~
 
 #---------- claude ----------
-**/CLAUDE.md
+CLAUDE.md
